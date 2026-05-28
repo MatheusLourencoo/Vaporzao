@@ -3,9 +3,7 @@
 // quando estiver pronto para integrar o backend.
 // ============================================================
 
-import type { Game, Achievement, Review, LibraryEntry } from "../types";
-
-export const MOCK_GAMES: Game[] = [
+export const MOCK_GAMES = [
   {
     id: 1,
     titulo: "Counter-Tapa",
@@ -81,13 +79,12 @@ export const MOCK_GAMES: Game[] = [
   }
 ];
 
-export const GENEROS: string[] = [
+export const GENEROS = [
   "Ação", "Aventura", "FPS", "Terror", "RPG", "Estratégia", "Corrida", "Tabuleiro"
 ];
 
-// Mapeamento nome → ID para a API (POST /jogos usa generoIds: number[])
-// Ajuste os IDs conforme retorno real de GET /generos
-export const GENERO_IDS: Record<string, number> = {
+// Mapeamento nome → ID para a API (POST /jogos usa generoIds)
+export const GENERO_IDS = {
   "Ação": 1,
   "Aventura": 2,
   "FPS": 3,
@@ -98,25 +95,21 @@ export const GENERO_IDS: Record<string, number> = {
   "Tabuleiro": 8
 };
 
-// Mock de conquistas por jogo (substitua pela API: GET /games/:id/achievements)
-export const MOCK_ACHIEVEMENTS: Achievement[] = [
+export const MOCK_ACHIEVEMENTS = [
   { titulo: "Primeiro Sangue", descricao: "Vença sua primeira partida", pontos: 50 },
   { titulo: "Exterminador", descricao: "Elimine 100 inimigos", pontos: 100 },
   { titulo: "Lenda", descricao: "Alcance o nível máximo", pontos: 200 }
 ];
 
-// Mock de avaliações (substitua pela API: GET /games/:id/reviews)
-export const MOCK_REVIEWS: Review[] = [
+export const MOCK_REVIEWS = [
   { usuario: "João Silva", nota: 9, texto: "Jogo incrível! Muito divertido.", recomenda: true },
   { usuario: "Maria Santos", nota: 8, texto: "Bom jogo, mas poderia ter mais conteúdo.", recomenda: true },
   { usuario: "Pedro Costa", nota: 10, texto: "Perfeito! Melhor jogo brasileiro!", recomenda: true }
 ];
 
-// Mock da biblioteca do usuário (substitua pela API: GET /users/:id/library)
-export const MOCK_LIBRARY: LibraryEntry[] = MOCK_GAMES.slice(0, 4).map((game) => ({
+export const MOCK_LIBRARY = MOCK_GAMES.slice(0, 4).map((game) => ({
   game,
   horasJogadas: 42
 }));
 
-// Mock da wishlist do usuário (substitua pela API: GET /users/:id/wishlist)
-export const MOCK_WISHLIST: Game[] = MOCK_GAMES.slice(0, 3);
+export const MOCK_WISHLIST = MOCK_GAMES.slice(0, 3);

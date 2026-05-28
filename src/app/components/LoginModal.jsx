@@ -1,16 +1,9 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { motion } from "motion/react";
-// Quando a API estiver pronta, importe e use:
-// import { login, register } from "../../services/api";
 
-interface LoginModalProps {
-  onClose: () => void;
-  onLoginSuccess?: () => void;
-}
-
-export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
-  const [activeTab, setActiveTab] = useState<"login" | "registro">("login");
+export function LoginModal({ onClose, onLoginSuccess }) {
+  const [activeTab, setActiveTab] = useState("login");
   const [matricula, setMatricula] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
@@ -27,7 +20,7 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
   // }
 
   // Simulação de login para o protótipo (substitua pelas funções da API acima)
-  function handleSimulatedSubmit(e: React.FormEvent) {
+  function handleSimulatedSubmit(e) {
     e.preventDefault();
     if (matricula && senha) {
       localStorage.setItem("vaporzao_token", "mock-token-prototipo");
@@ -50,7 +43,7 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
         </div>
 
         <div className="flex gap-4 mb-6 border-b border-border">
-          {(["login", "registro"] as const).map((tab) => (
+          {["login", "registro"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

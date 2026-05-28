@@ -1,17 +1,9 @@
 import { useState } from "react";
 import { X, Star, Plus, Heart } from "lucide-react";
-import type { Game } from "../../types";
 import { MOCK_ACHIEVEMENTS, MOCK_REVIEWS } from "../../data/mockData";
-// Quando a API estiver pronta, importe e use:
-// import { getAchievements, getReviews, postReview } from "../../services/api";
 
-interface GameDetailsModalProps {
-  game: Game | null;
-  onClose: () => void;
-}
-
-export function GameDetailsModal({ game, onClose }: GameDetailsModalProps) {
-  const [selectedTab, setSelectedTab] = useState<"conquistas" | "avaliacoes">("conquistas");
+export function GameDetailsModal({ game, onClose }) {
+  const [selectedTab, setSelectedTab] = useState("conquistas");
   const [reviewNota, setReviewNota] = useState(8);
   const [reviewTexto, setReviewTexto] = useState("");
   const [recomenda, setRecomenda] = useState(true);
@@ -106,7 +98,7 @@ export function GameDetailsModal({ game, onClose }: GameDetailsModalProps) {
 
             <div className="mb-8">
               <div className="flex gap-4 border-b border-border mb-6">
-                {(["conquistas", "avaliacoes"] as const).map((tab) => (
+                {["conquistas", "avaliacoes"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setSelectedTab(tab)}

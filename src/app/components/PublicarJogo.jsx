@@ -2,25 +2,9 @@ import { useState } from "react";
 import { Upload, Lock, Plus, X, Gamepad2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { GENEROS, GENERO_IDS } from "../../data/mockData";
-import { createGame } from "../../services/api";
-import type { CreateGamePayload } from "../../types";
+import { api } from '../../services/api';
 
-interface PublicarJogoProps {
-  isLoggedIn: boolean;
-  onRequestLogin: () => void;
-}
-
-interface FormState {
-  titulo: string;
-  descricao: string;
-  preco: string;
-  desenvolvedora: string;
-  lancamento: string;
-  capaUrl: string;
-  generosSelecionados: string[];
-}
-
-const FORM_INITIAL: FormState = {
+const FORM_INITIAL = {
   titulo: "",
   descricao: "",
   preco: "",
@@ -30,10 +14,10 @@ const FORM_INITIAL: FormState = {
   generosSelecionados: []
 };
 
-export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) {
-  const [form, setForm] = useState<FormState>(FORM_INITIAL);
+export default function PublicarJogo({ isLoggedIn, onRequestLogin }) {
+  const [form, setForm] = useState(FORM_INITIAL);
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   if (!isLoggedIn) {
@@ -63,7 +47,7 @@ export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) 
     );
   }
 
-  function toggleGenero(genero: string) {
+  function toggleGenero(genero) {
     setForm((prev) => ({
       ...prev,
       generosSelecionados: prev.generosSelecionados.includes(genero)
@@ -72,11 +56,11 @@ export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) 
     }));
   }
 
-  function set(field: keyof FormState, value: string) {
+  function set(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (form.generosSelecionados.length === 0) {
@@ -88,7 +72,7 @@ export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) 
     setSubmitting(true);
     setStatus("idle");
 
-    const payload: CreateGamePayload = {
+    const payload = {
       titulo: form.titulo,
       descricao: form.descricao,
       preco: parseFloat(form.preco.replace(",", ".")),
@@ -101,10 +85,16 @@ export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) 
     };
 
     try {
-      await createGame(payload);
+      const token = localStorage.getItem('token');
+      await api.post('/jogos', payload, {
+        headers: {
+          token: token
+        }
+      });
+      
       setStatus("success");
       setForm(FORM_INITIAL);
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao publicar o jogo.";
       setErrorMsg(msg);
       setStatus("error");
@@ -156,7 +146,7 @@ export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) 
             <p className="font-semibold">Erro ao publicar</p>
             <p className="text-sm mt-0.5 opacity-80">{errorMsg}</p>
           </div>
-          <button onClick={() => setStatus("idle")} className="ml-auto">
+          <button type="button" onClick={() => setStatus("idle")} className="ml-auto">
             <X className="w-4 h-4" />
           </button>
         </motion.div>
@@ -230,7 +220,7 @@ export function PublicarJogo({ isLoggedIn, onRequestLogin }: PublicarJogoProps) 
                 src={form.capaUrl}
                 alt="Preview da capa"
                 className="w-full h-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
             </div>
           )}

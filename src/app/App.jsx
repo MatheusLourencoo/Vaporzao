@@ -3,36 +3,38 @@ import {
   Gamepad2, Search, Library, Heart, User,
   Star, Clock, TrendingUp, Filter, Eye, Plus, Upload, LogOut
 } from "lucide-react";
-
-import type { Game, ViewType, HighlightTab, SortOption } from "../types";
-import { MOCK_GAMES, GENEROS, MOCK_LIBRARY, MOCK_WISHLIST } from "../data/mockData";
+import { GENEROS, MOCK_LIBRARY, MOCK_WISHLIST } from "../data/mockData"; 
 import { useGames } from "../hooks/useGames";
 import { GameCard } from "./components/GameCard";
 import { GameDetailsModal } from "./components/GameDetailsModal";
 import { LoginModal } from "./components/LoginModal";
-import { PublicarJogo } from "./components/PublicarJogo";
+import PublicarJogo  from './components/PublicarJogo';
 
 export default function App() {
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [selectedGame, setSelectedGame] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentView, setCurrentView] = useState<ViewType>("home");
-  const [activeTab, setActiveTab] = useState<HighlightTab>("recentes");
-  const [selectedGeneros, setSelectedGeneros] = useState<string[]>([]);
-  const [ordenarPor, setOrdenarPor] = useState<SortOption>("popularidade");
+  const [currentView, setCurrentView] = useState("home");
+  const [activeTab, setActiveTab] = useState("recentes");
+  const [selectedGeneros, setSelectedGeneros] = useState([]);
+  const [ordenarPor, setOrdenarPor] = useState("popularidade");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const toggleGenero = (genero: string) => {
+  const toggleGenero = (genero) => {
     setSelectedGeneros((prev) =>
       prev.includes(genero) ? prev.filter((g) => g !== genero) : [...prev, genero]
     );
   };
 
-  const { games: filteredGames } = useGames({
+  // Aqui é onde os jogos reais da API entram!
+  const { games: filteredGames = [], carregando } = useGames({
     generos: selectedGeneros,
     ordenarPor,
     busca: searchQuery
   });
+
+  // Pegamos o primeiro jogo da API para ser o destaque do Banner
+  const jogoDestaque = filteredGames.length > 0 ? filteredGames[0] : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -48,22 +50,20 @@ export default function App() {
             </div>
 
             <nav className="hidden md:flex items-center gap-6">
-              {(["home", "biblioteca", "wishlist"] as const).map((view) => (
+              {["home", "biblioteca", "wishlist"].map((view) => (
                 <button
                   key={view}
                   onClick={() => setCurrentView(view)}
-                  className={`font-semibold transition-colors capitalize ${
-                    currentView === view ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`font-semibold transition-colors capitalize ${currentView === view ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {view === "home" ? "Loja" : view === "biblioteca" ? "Biblioteca" : "Wishlist"}
                 </button>
               ))}
               <button
                 onClick={() => setCurrentView("publicar")}
-                className={`font-semibold transition-colors flex items-center gap-1.5 ${
-                  currentView === "publicar" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`font-semibold transition-colors flex items-center gap-1.5 ${currentView === "publicar" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <Upload className="w-4 h-4" />
                 Publicar Jogo
@@ -122,119 +122,69 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {currentView === "home" && (
           <>
-            {/* Hero Banner */}
-            <section className="mb-12">
-              <div className="relative rounded-xl overflow-hidden h-[500px]">
-                <img
-                  src={MOCK_GAMES[0].capaUrl}
-                  alt={MOCK_GAMES[0].titulo}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent flex items-center">
-                  <div className="p-12 max-w-2xl">
-                    <h1 className="text-5xl font-bold mb-4">{MOCK_GAMES[0].titulo}</h1>
-                    <p className="text-xl text-gray-300 mb-4">{MOCK_GAMES[0].descricao}</p>
+            {/* O Banner só aparece se a API trouxer algum jogo */}
+            {jogoDestaque && (
+              <section className="mb-12">
+                <div className="relative rounded-xl overflow-hidden h-[500px]">
+                  <img
+                    src={jogoDestaque.capaUrl || "https://images.unsplash.com/photo-1552820728-8b83bb6b773f"}
+                    alt={jogoDestaque.titulo}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent flex items-center">
+                    <div className="p-12 max-w-2xl">
+                      <h1 className="text-5xl font-bold mb-4">{jogoDestaque.titulo}</h1>
+                      <p className="text-xl text-gray-300 mb-4">{jogoDestaque.descricao}</p>
 
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="flex items-center gap-2">
-                        <Star className="w-6 h-6 fill-primary text-primary" />
-                        <span className="text-2xl font-bold">{MOCK_GAMES[0].nota}</span>
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                          <Star className="w-6 h-6 fill-primary text-primary" />
+                          <span className="text-2xl font-bold">{jogoDestaque.nota || 0}</span>
+                        </div>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-300">{jogoDestaque.avaliacoes || 0} avaliações</span>
                       </div>
-                      <span className="text-gray-400">|</span>
-                      <span className="text-gray-300">{MOCK_GAMES[0].avaliacoes} avaliações</span>
-                    </div>
 
-                    <div className="flex gap-3 mb-6">
-                      <button
-                        onClick={() => setSelectedGame(MOCK_GAMES[0])}
-                        className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8 py-3 rounded-md font-bold text-lg transition-all flex items-center gap-2"
-                      >
-                        <Eye className="w-5 h-5" />
-                        Ver Detalhes
-                      </button>
-                      <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-md font-bold text-lg transition-all flex items-center gap-2">
-                        <Plus className="w-5 h-5" />
-                        Adicionar à Biblioteca
-                      </button>
-                      <button className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-3 rounded-md font-bold text-lg transition-all flex items-center gap-2">
-                        <Heart className="w-5 h-5" />
-                        Wishlist
-                      </button>
-                    </div>
+                      <div className="flex gap-3 mb-6">
+                        <button
+                          onClick={() => setSelectedGame(jogoDestaque)}
+                          className="bg-secondary hover:bg-secondary/90 text-secondary-foreground px-8 py-3 rounded-md font-bold text-lg transition-all flex items-center gap-2"
+                        >
+                          <Eye className="w-5 h-5" />
+                          Ver Detalhes
+                        </button>
+                        <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-md font-bold text-lg transition-all flex items-center gap-2">
+                          <Plus className="w-5 h-5" />
+                          Adicionar à Biblioteca
+                        </button>
+                      </div>
 
-                    <div className="flex items-center gap-3">
-                      {MOCK_GAMES[0].precoOriginal && (
-                        <span className="text-xl text-gray-400 line-through">
-                          R$ {MOCK_GAMES[0].precoOriginal.toFixed(2)}
+                      <div className="flex items-center gap-3">
+                        <span className="text-4xl font-bold text-primary">
+                          R$ {Number(jogoDestaque.preco).toFixed(2)}
                         </span>
-                      )}
-                      <span className="text-4xl font-bold text-primary">
-                        R$ {MOCK_GAMES[0].preco.toFixed(2)}
-                      </span>
-                      {MOCK_GAMES[0].desconto && (
-                        <span className="bg-primary text-primary-foreground px-3 py-1 rounded-md font-bold">
-                          -{MOCK_GAMES[0].desconto}%
-                        </span>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
-            {/* Destaques */}
+            {/* Destaques puxando direto da API */}
             <section className="mb-12">
               <h2 className="text-3xl font-bold mb-6">Destaques</h2>
-
-              <div className="flex gap-4 mb-6">
-                <button
-                  onClick={() => setActiveTab("recentes")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                    activeTab === "recentes"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  <Clock className="w-4 h-4 inline mr-2" />
-                  Recentes
-                </button>
-                <button
-                  onClick={() => setActiveTab("top")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                    activeTab === "top"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  <Star className="w-4 h-4 inline mr-2" />
-                  Top Avaliados
-                </button>
-                <button
-                  onClick={() => setActiveTab("populares")}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                    activeTab === "populares"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  <TrendingUp className="w-4 h-4 inline mr-2" />
-                  Populares
-                </button>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {MOCK_GAMES.slice(0, 6).map((game) => (
+                {filteredGames.slice(0, 6).map((game) => (
                   <GameCard key={game.id} game={game} onViewDetails={() => setSelectedGame(game)} />
                 ))}
               </div>
             </section>
 
-            {/* Todos os Jogos */}
+            {/* Todos os Jogos (API) */}
             <section>
               <h2 className="text-3xl font-bold mb-6">Todos os Jogos</h2>
 
               <div className="flex gap-6">
-                {/* Filtros */}
                 <div className="w-64 shrink-0 hidden lg:block">
                   <div className="bg-card border border-border rounded-lg p-6 sticky top-24">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -263,7 +213,7 @@ export default function App() {
                       <h4 className="font-semibold mb-3">Ordenar por</h4>
                       <select
                         value={ordenarPor}
-                        onChange={(e) => setOrdenarPor(e.target.value as SortOption)}
+                        onChange={(e) => setOrdenarPor(e.target.value)}
                         className="w-full bg-input border border-border rounded-md p-2 text-foreground"
                       >
                         <option value="popularidade">Popularidade</option>
@@ -276,20 +226,27 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Grid */}
                 <div className="flex-1">
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredGames.map((game) => (
-                      <GameCard key={game.id} game={game} onViewDetails={() => setSelectedGame(game)} />
-                    ))}
-                  </div>
-
-                  {filteredGames.length === 0 && (
+                  {carregando ? (
                     <div className="text-center py-12">
-                      <p className="text-muted-foreground text-lg">
-                        Nenhum jogo encontrado com os filtros selecionados.
-                      </p>
+                      <p className="text-muted-foreground text-lg">Carregando jogos do servidor...</p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {filteredGames.map((game) => (
+                          <GameCard key={game.id} game={game} onViewDetails={() => setSelectedGame(game)} />
+                        ))}
+                      </div>
+
+                      {filteredGames.length === 0 && (
+                        <div className="text-center py-12">
+                          <p className="text-muted-foreground text-lg">
+                            Nenhum jogo encontrado com os filtros selecionados.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -300,6 +257,7 @@ export default function App() {
         {currentView === "biblioteca" && (
           <section>
             <h2 className="text-3xl font-bold mb-6">Minha Biblioteca</h2>
+            {/* Temporário usando mock até integrarmos a rota da biblioteca */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {MOCK_LIBRARY.map(({ game, horasJogadas }) => (
                 <div key={game.id} className="bg-card rounded-lg overflow-hidden border border-border">
@@ -339,7 +297,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-card border-t border-border mt-20">
         <div className="max-w-7xl mx-auto px-4 py-8 text-center text-muted-foreground">
           <p>© 2026 Vaporzão - A melhor loja de jogos 🇧🇷</p>
