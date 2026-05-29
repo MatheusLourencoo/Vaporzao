@@ -54,22 +54,26 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin }) {
     const payload = {
       titulo: form.titulo,
       descricao: form.descricao,
-      preco: parseFloat(form.preco.replace(",", ".")),
+      preco: parseFloat(form.preco),
       desenvolvedora: form.desenvolvedora,
-      lancamento: form.lancamento
-        ? new Date(form.lancamento).toISOString()
-        : new Date().toISOString(),
+      lancamento: form.lancamento || new Date().toISOString(),
       capaUrl: form.capaUrl,
       generoIds: form.generosSelecionados
     };
 
     try {
-      await api.post('/jogos', payload);
+      const token = localStorage.getItem("vaporzao_token");
+
+      await api.post('/jogos', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       setStatus("success");
       setForm(FORM_INITIAL);
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || "Erro ao publicar o jogo.";
+      const msg = err.response?.data?.message || "Erro ao publicar o jogo.";
       setErrorMsg(msg);
       setStatus("error");
     } finally {
@@ -90,7 +94,7 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin }) {
           </div>
           <h2 className="text-2xl font-bold mb-3">Acesso Restrito</h2>
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            Você precisa estar logado para publicar um jogo na plataforma. Faça login com sua matrícula e senha.
+            Você precisa estar logado para publicar um jogo na plataforma.
           </p>
           <button
             onClick={onRequestLogin}
@@ -113,126 +117,71 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin }) {
           </div>
           <h2 className="text-3xl font-bold">Publicar Jogo</h2>
         </div>
-        <p className="text-muted-foreground">
-          Compartilhe seu jogo com a comunidade Vaporzão.
-        </p>
       </div>
 
       {status === "success" && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 bg-primary/10 border border-primary/30 text-primary rounded-lg p-4 mb-6"
-        >
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 bg-primary/10 border border-primary/30 text-primary rounded-lg p-4 mb-6">
           <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-semibold">Jogo publicado com sucesso!</p>
-            <p className="text-sm text-primary/80 mt-0.5">Seu jogo já está disponível na loja.</p>
-          </div>
+          <p className="font-semibold">Jogo publicado com sucesso!</p>
         </motion.div>
       )}
 
       {status === "error" && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-4 mb-6"
-        >
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-4 mb-6">
           <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold">Erro ao publicar</p>
-            <p className="text-sm mt-0.5 opacity-80">{errorMsg}</p>
+            <p className="text-sm opacity-80">{errorMsg}</p>
           </div>
-          <button type="button" onClick={() => setStatus("idle")} className="ml-auto">
-            <X className="w-4 h-4" />
-          </button>
         </motion.div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold mb-2">Título <span className="text-primary">*</span></label>
-            <input required type="text" value={form.titulo} onChange={(e) => set("titulo", e.target.value)} placeholder="Ex: Counter-Tapa" className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
+            <label className="block text-sm font-semibold mb-2">Título *</label>
+            <input required type="text" value={form.titulo} onChange={(e) => set("titulo", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2">Desenvolvedora <span className="text-primary">*</span></label>
-            <input required type="text" value={form.desenvolvedora} onChange={(e) => set("desenvolvedora", e.target.value)} placeholder="Ex: Banana Studios" className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
+            <label className="block text-sm font-semibold mb-2">Desenvolvedora *</label>
+            <input required type="text" value={form.desenvolvedora} onChange={(e) => set("desenvolvedora", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold mb-2">Descrição <span className="text-primary">*</span></label>
-          <textarea required value={form.descricao} onChange={(e) => set("descricao", e.target.value)} placeholder="Descreva o jogo, mecânicas, história..." rows={4} className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none" />
+          <label className="block text-sm font-semibold mb-2">Descrição *</label>
+          <textarea required value={form.descricao} onChange={(e) => set("descricao", e.target.value)} rows={4} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold mb-2">URL da Capa <span className="text-primary">*</span></label>
-          <input required type="url" value={form.capaUrl} onChange={(e) => set("capaUrl", e.target.value)} placeholder="https://example.com/capa.jpg" className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
-          {form.capaUrl && (
-            <div className="mt-3 relative aspect-video w-48 rounded-lg overflow-hidden border border-border">
-              <img src={form.capaUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-            </div>
-          )}
+          <label className="block text-sm font-semibold mb-2">URL da Capa *</label>
+          <input required type="url" value={form.capaUrl} onChange={(e) => set("capaUrl", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold mb-2">Preço (R$) <span className="text-primary">*</span></label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">R$</span>
-              <input required type="number" min="0" step="0.01" value={form.preco} onChange={(e) => set("preco", e.target.value)} placeholder="29.90" className="w-full bg-input border border-border rounded-lg pl-12 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
-            </div>
+            <label className="block text-sm font-semibold mb-2">Preço (R$) *</label>
+            <input required type="number" min="0" step="0.01" value={form.preco} onChange={(e) => set("preco", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
           </div>
           <div>
             <label className="block text-sm font-semibold mb-2">Data de Lançamento</label>
-            <input type="date" value={form.lancamento} onChange={(e) => set("lancamento", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
+            <input type="date" value={form.lancamento} onChange={(e) => set("lancamento", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold mb-3">
-            Gêneros <span className="text-primary">*</span> <span className="text-muted-foreground font-normal">(selecione ao menos 1)</span>
-          </label>
+          <label className="block text-sm font-semibold mb-3">Gêneros *</label>
           <div className="flex flex-wrap gap-2">
-            {listaGeneros.map((genero) => {
-              const selected = form.generosSelecionados.includes(genero.id);
-              return (
-                <button
-                  key={genero.id}
-                  type="button"
-                  onClick={() => toggleGenero(genero.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all border ${selected
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-muted text-muted-foreground border-transparent hover:border-primary/40 hover:text-foreground"
-                    }`}
-                >
-                  {selected && <span className="mr-1">✓</span>}
-                  {genero.nome}
-                </button>
-              );
-            })}
+            {listaGeneros.map((genero) => (
+              <button key={genero.id} type="button" onClick={() => toggleGenero(genero.id)} className={`px-4 py-2 rounded-lg text-sm font-semibold ${form.generosSelecionados.includes(genero.id) ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                {genero.nome}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="border-t border-border" />
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground py-3.5 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2"
-        >
-          {submitting ? (
-            <>
-              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Publicando...
-            </>
-          ) : (
-            <>
-              <Plus className="w-5 h-5" />
-              Publicar Jogo
-            </>
-          )}
+        <button type="submit" disabled={submitting} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 rounded-lg font-bold text-lg">
+          {submitting ? "Publicando..." : "Publicar Jogo"}
         </button>
       </form>
     </div>

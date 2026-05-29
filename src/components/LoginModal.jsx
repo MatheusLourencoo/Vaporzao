@@ -59,14 +59,13 @@ export function LoginModal({ onClose, onLoginSuccess }) {
 
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold mb-2">
-            {isRegistro ? "Criar Conta Vaporzão" : "Entrar no Vaporzão"}
+            {isRegistro ? "Criar Conta " : "Entrar"}
           </h2>
           <p className="text-muted-foreground text-sm">
             {isRegistro ? "Registre sua matrícula para publicar e comprar jogos." : "Insira suas credenciais para acessar sua conta."}
           </p>
         </div>
 
-        {/* Mensagem de Erro */}
         {erro && (
           <div className="flex items-center gap-2 bg-destructive/10 text-destructive text-sm p-3 rounded-lg mb-6 border border-destructive/20">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -74,7 +73,6 @@ export function LoginModal({ onClose, onLoginSuccess }) {
           </div>
         )}
 
-        {/* Mensagem de Sucesso após o cadastro */}
         {sucesso && (
           <div className="flex items-center gap-2 bg-primary/10 text-primary text-sm p-3 rounded-lg mb-6 border border-primary/20">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
