@@ -2,13 +2,10 @@ import { useState } from "react";
 import { Eye, Plus, Heart, Star } from "lucide-react";
 import { motion } from "motion/react";
 
-// Usamos alias (os dois pontos) nas props para traduzir as variáveis por dentro do componente.
-// Assim, fica tudo em português aqui, mas não quebra o seu App.jsx que manda os dados em inglês.
 export function GameCard({ game: jogo, onViewDetails: aoVerDetalhes }) {
-  // Controle simples para saber se o mouse está em cima do card
+
   const [mousePorCima, setMousePorCima] = useState(false);
 
-  // --- PROTEÇÕES E VALORES PADRÃO ---
   // Se a API não mandar alguma informação, usamos esses valores para a tela não quebrar
   const imagemCapa = jogo.capaUrl || "https://images.unsplash.com/photo-1552820728-8b83bb6b773f";
   const notaDoJogo = jogo.nota || 0;

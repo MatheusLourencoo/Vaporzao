@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { X, Star, Plus, Heart } from "lucide-react";
-import { MOCK_ACHIEVEMENTS, MOCK_REVIEWS } from "../../data/mockData";
 
 export function GameDetailsModal({ game, onClose }) {
   const [selectedTab, setSelectedTab] = useState("conquistas");
@@ -10,14 +9,8 @@ export function GameDetailsModal({ game, onClose }) {
 
   if (!game) return null;
 
-  // Substitua por dados vindos da API quando integrar
   const conquistas = MOCK_ACHIEVEMENTS;
   const avaliacoes = MOCK_REVIEWS;
-
-  // Exemplo de envio de review via API:
-  // async function handleSubmitReview() {
-  //   await postReview(game.id, { nota: reviewNota, texto: reviewTexto, recomenda });
-  // }
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 overflow-y-auto">
