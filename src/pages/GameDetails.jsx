@@ -13,7 +13,13 @@ const obterCapaAlternativa = (titulo = "") => capasPadrao[titulo.length % capasP
 export function GameDetails({ adicionarNaBiblioteca, adicionarNaWishlist, showToast }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Estados do Jogo e Galeria
   const [game, setGame] = useState(null);
+  const [galeria, setGaleria] = useState([]);
+  const [imagemDestaque, setImagemDestaque] = useState("");
+  
+  // Estados das Avaliações
   const [reviewNota, setReviewNota] = useState(5);
   const [reviewTexto, setReviewTexto] = useState("");
   const [reviews, setReviews] = useState([]);
@@ -21,13 +27,28 @@ export function GameDetails({ adicionarNaBiblioteca, adicionarNaWishlist, showTo
   const token = localStorage.getItem("vaporzao_token");
 
   useEffect(() => {
+    // Força a página a rolar para o topo ao abrir os detalhes
+    window.scrollTo(0, 0);
+
+    // 1. Busca os detalhes do jogo
     api.get(`/jogos/${id}`)
-      .then(res => setGame(res.data))
+      .then(res => {
+        setGame(res.data);
+        // Define a imagem principal inicialmente como a capa
+        setImagemDestaque(res.data.capaUrl || obterCapaAlternativa(res.data.titulo));
+      })
       .catch(err => console.error("Erro ao buscar jogo:", err));
 
+    // 2. Busca as imagens da galeria
+    api.get(`/jogos/${id}/imagens`)
+      .then(res => setGaleria(res.data))
+      .catch(err => console.error("Erro ao carregar imagens:", err));
+
+    // 3. Busca as avaliações
     api.get(`/jogos/${id}/reviews`, { headers: { token } })
       .then(res => setReviews(res.data))
       .catch(err => console.error("Erro ao carregar reviews:", err));
+      
   }, [id, token]);
 
   const handlePublicarAvaliacao = async () => {
@@ -62,11 +83,45 @@ export function GameDetails({ adicionarNaBiblioteca, adicionarNaWishlist, showTo
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-8">
             <h1 className="text-5xl font-extrabold tracking-tight">{game.titulo}</h1>
-            <img 
-              src={game.capaUrl || obterCapaAlternativa(game.titulo)} 
-              className="w-full h-[400px] object-cover rounded-xl shadow-2xl"
-              onError={(e) => { e.target.src = obterCapaAlternativa(game.titulo); }}
-            />
+            
+            {/* Bloco da Imagem Principal e Galeria */}
+            <div className="space-y-4">
+              {/* Imagem em Destaque */}
+              <img 
+                src={imagemDestaque} 
+                alt={game.titulo}
+                className="w-full h-[400px] object-cover rounded-xl shadow-2xl transition-all duration-300"
+                onError={(e) => { e.target.src = obterCapaAlternativa(game.titulo); }}
+              />
+
+              {/* Thumbnails (Miniaturas) */}
+              {galeria.length > 0 && (
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
+                  {/* A capa original sempre é a primeira opção */}
+                  <img 
+                    src={game.capaUrl || obterCapaAlternativa(game.titulo)} 
+                    onClick={() => setImagemDestaque(game.capaUrl || obterCapaAlternativa(game.titulo))}
+                    className={`w-32 h-20 shrink-0 object-cover rounded-lg cursor-pointer border-2 transition-all ${
+                      imagemDestaque === (game.capaUrl || obterCapaAlternativa(game.titulo)) ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                    alt="Capa Original"
+                  />
+                  
+                  {/* As fotos extras da API */}
+                  {galeria.map((img, index) => (
+                    <img 
+                      key={img.id || index}
+                      src={img.url} 
+                      onClick={() => setImagemDestaque(img.url)}
+                      className={`w-32 h-20 shrink-0 object-cover rounded-lg cursor-pointer border-2 transition-all ${
+                        imagemDestaque === img.url ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                      alt={`Screenshot ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
             <section>
               <h2 className="text-2xl font-bold mb-4">Sobre o jogo</h2>

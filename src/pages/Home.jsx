@@ -1,23 +1,54 @@
+import { useState, useEffect } from "react";
 import { Filter } from "lucide-react";
 import { Banner } from "../components/Banner";
 import { GameCard } from "../components/GameCard";
 import { useNavigate } from "react-router-dom";
+import { api } from "../services/api";
+import { useGames } from "../hooks/useGames";
 
 export function Home({ 
-  filteredGames, 
-  carregando, 
-  listaGeneros, 
-  selectedGeneros, 
-  toggleGenero,
-  adicionarNaBiblioteca,
-  adicionarNaWishlist
+  searchQuery, 
+  adicionarNaBiblioteca, 
+  adicionarNaWishlist 
 }) {
   const navigate = useNavigate(); 
-  const jogosGratuitos = filteredGames.filter(game => Number(game.preco) === 0);
+  
+  const [selectedGeneros, setSelectedGeneros] = useState([]);
+  const [listaGeneros, setListaGeneros] = useState([]);
+  const [ordenarPor, setOrdenarPor] = useState("popularidade");
+  
+  // Debounce
+  const [buscaDebounced, setBuscaDebounced] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBuscaDebounced(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    api.get('/generos')
+      .then((r) => setListaGeneros(r.data))
+      .catch(console.error);
+  }, []);
+
+  const toggleGenero = (g) => {
+    setSelectedGeneros(prev => prev.includes(g) ? prev.filter(i => i !== g) : [...prev, g]);
+  };
+
+  const { games = [], carregando } = useGames({ 
+    generos: selectedGeneros,
+    ordenarPor,
+    busca: buscaDebounced // busca com delay para a API
+  });
+
+  const jogosGratuitos = games.filter(game => Number(game.preco) === 0);
 
   return (
     <>
-      <Banner jogos={filteredGames} onVerDetalhes={(game) => navigate(`/jogo/${game.id}`)} />
+      <Banner jogos={games} onVerDetalhes={(game) => navigate(`/jogo/${game.id}`)} />
 
       {jogosGratuitos.length > 0 && (
         <section className="mt-12 bg-zinc-900/30 p-8 rounded-2xl border border-white/5">
@@ -57,12 +88,12 @@ export function Home({
               </h3>
               <div className="space-y-2">
                 {listaGeneros.map((genero) => (
-                  <label key={genero.id} className="flex items-center gap-2 cursor-pointer hover:text-primary">
+                  <label key={genero.id} className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors">
                     <input
                       type="checkbox"
                       checked={selectedGeneros.includes(genero.nome)}
                       onChange={() => toggleGenero(genero.nome)}
-                      className="w-4 h-4 rounded border-border"
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                     />
                     <span>{genero.nome}</span>
                   </label>
@@ -73,14 +104,18 @@ export function Home({
 
           <div className="flex-1">
             {carregando ? (
-              <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+              <div className="text-center py-12 text-muted-foreground">Buscando na API...</div>
+            ) : games.length === 0 ? (
+               <div className="text-center py-12 text-muted-foreground bg-card rounded-lg border border-border">
+                 Nenhum jogo encontrado.
+               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredGames.map((game) => (
+                {games.map((game) => (
                   <GameCard 
                     key={game.id} 
                     game={game} 
-                    onViewDetails={() => navigate(`/jogo/${game.id}`)} 
+                    onViewDetails={() => navigate(`/jogo/${game.id}`)}
                   />
                 ))}
               </div>

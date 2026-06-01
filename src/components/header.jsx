@@ -1,5 +1,7 @@
-import { Gamepad2, Search, Upload, User, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Search, User, LogOut, Gamepad2, Upload } from "lucide-react";
+import { api } from "../services/api";
 
 export function Header({ 
   searchQuery, 
@@ -8,7 +10,30 @@ export function Header({
   setIsLoggedIn, 
   setShowLogin 
 }) {
+  const [nomeUsuario, setNomeUsuario] = useState("Logado");
   const navigate = useNavigate();
+  const token = localStorage.getItem("vaporzao_token");
+
+  useEffect(() => {
+    if (isLoggedIn && token) {
+      api.get('/auth/me', { headers: { token } })
+        .then(res => {
+          const rawName = res.data.nome || res.data.matricula || "Usuário";
+          const firstName = rawName.split(' ')[0];
+          const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+          setNomeUsuario(formattedName);
+        })
+        .catch(console.error);
+    } else {
+      setNomeUsuario("Logado");
+    }
+  }, [isLoggedIn, token]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("vaporzao_token");
+    setIsLoggedIn(false);
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-card border-b border-border backdrop-blur-sm bg-opacity-95">
@@ -21,37 +46,38 @@ export function Header({
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">Loja</Link>
-            <Link to="/biblioteca" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">Biblioteca</Link>
-            <Link to="/wishlist" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">Wishlist</Link>
-            <Link to="/publicar" className="font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-              <Upload className="w-4 h-4" /> Publicar Jogo
+          <nav className="hidden md:flex items-center gap-5 mr-auto ml-6">
+            <Link to="/" className="text-[13px] font-bold tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors">Loja</Link>
+            <Link to="/biblioteca" className="text-[13px] font-bold tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors">Biblioteca</Link>
+            <Link to="/wishlist" className="text-[13px] font-bold tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors">Wishlist</Link>
+            <Link to="/publicar" className="text-[13px] font-bold tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+              <Upload className="w-3.5 h-3.5" /> Publicar Jogo
             </Link>
           </nav>
 
-          <div className="flex-1 max-w-md hidden md:block">
+          <div className="flex-1 max-w-md hidden lg:block ml-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar jogos..."
-                className="w-full bg-input border border-border rounded-md pl-10 pr-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full bg-input border border-border rounded-md pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pl-4">
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
-                <span className="hidden md:flex items-center gap-1.5 text-sm text-primary font-semibold bg-primary/10 px-3 py-1.5 rounded-full">
-                  <User className="w-3.5 h-3.5" /> Logado
+                <span className="hidden md:flex items-center gap-1.5 text-[13px] text-primary font-bold bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                  <User className="w-3.5 h-3.5" /> {nomeUsuario}
                 </span>
                 <button
-                  onClick={() => { setIsLoggedIn(false); localStorage.removeItem("vaporzao_token"); }}
-                  className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                  onClick={handleLogout}
+                  className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-red-500"
+                  title="Sair"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -59,10 +85,10 @@ export function Header({
             ) : (
               <button
                 onClick={() => setShowLogin(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-bold transition-all flex items-center gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded-md font-bold text-sm transition-all flex items-center gap-2"
               >
                 <User className="w-4 h-4" />
-                iniciar sessão
+                Iniciar Sessão
               </button>
             )}
           </div>

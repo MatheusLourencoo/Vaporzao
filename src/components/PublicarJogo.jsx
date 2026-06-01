@@ -1,189 +1,222 @@
 import { useState, useEffect } from "react";
-import { Upload, Lock, Plus, X, Gamepad2, AlertCircle, CheckCircle2 } from "lucide-react";
-import { motion } from "motion/react";
 import { api } from "../services/api";
+import { Trash2 } from "lucide-react";
 
-const FORM_INITIAL = {
-  titulo: "",
-  descricao: "",
-  preco: "",
-  desenvolvedora: "",
-  lancamento: "",
-  capaUrl: "",
-  generosSelecionados: []
-};
-
-export default function PublicarJogo({ isLoggedIn, onRequestLogin }) {
-  const [form, setForm] = useState(FORM_INITIAL);
-  const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState("idle");
-  const [errorMsg, setErrorMsg] = useState("");
+export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) {
+  const [activeTab, setActiveTab] = useState("publicar");
+  const [meusJogos, setMeusJogos] = useState([]);
+  const [carregandoMeusJogos, setCarregandoMeusJogos] = useState(false);
   const [listaGeneros, setListaGeneros] = useState([]);
+  const [titulo, setTitulo] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [desenvolvedora, setDesenvolvedora] = useState("");
+  const [preco, setPreco] = useState("");
+  const [lancamento, setLancamento] = useState("");
+  const [capaUrl, setCapaUrl] = useState("");
+  const [generosSelecionados, setGenerosSelecionados] = useState([]);
+  const [galeria1, setGaleria1] = useState("");
+  const [galeria2, setGaleria2] = useState("");
+  const [galeria3, setGaleria3] = useState("");
+
+  const token = localStorage.getItem("vaporzao_token");
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      onRequestLogin();
+    }
     api.get('/generos')
-      .then((resposta) => setListaGeneros(resposta.data))
-      .catch((erro) => console.error("Erro ao carregar gêneros no form:", erro));
-  }, []);
+      .then(res => setListaGeneros(res.data))
+      .catch(console.error);
+  }, [isLoggedIn, onRequestLogin]);
 
-  function toggleGenero(generoId) {
-    setForm((prev) => ({
-      ...prev,
-      generosSelecionados: prev.generosSelecionados.includes(generoId)
-        ? prev.generosSelecionados.filter((id) => id !== generoId)
-        : [...prev.generosSelecionados, generoId]
-    }));
-  }
-
-  function set(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    if (form.generosSelecionados.length === 0) {
-      setErrorMsg("Selecione pelo menos um gênero.");
-      setStatus("error");
-      return;
+  useEffect(() => {
+    if (activeTab === "meus-jogos" && token) {
+      carregarMeusJogos();
     }
+  }, [activeTab, token]);
 
-    setSubmitting(true);
-    setStatus("idle");
-
-    const payload = {
-      titulo: form.titulo,
-      descricao: form.descricao,
-      preco: parseFloat(form.preco),
-      desenvolvedora: form.desenvolvedora,
-      lancamento: form.lancamento || new Date().toISOString(),
-      capaUrl: form.capaUrl,
-      generoIds: form.generosSelecionados
-    };
-
+  const carregarMeusJogos = async () => {
+    setCarregandoMeusJogos(true);
     try {
-      const token = localStorage.getItem("vaporzao_token");
-
-      await api.post('/jogos', payload, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      setStatus("success");
-      setForm(FORM_INITIAL);
-    } catch (err) {
-      const msg = err.response?.data?.message || "Erro ao publicar o jogo.";
-      setErrorMsg(msg);
-      setStatus("error");
+      const resMe = await api.get('/auth/me', { headers: { token } });
+      const matricula = resMe.data.matricula;
+      const resUser = await api.get(`/usuarios/${matricula}`);
+      setMeusJogos(resUser.data.jogos || []);
+    } catch (error) {
+      if (showToast) showToast("Erro ao carregar seus jogos", "erro");
     } finally {
-      setSubmitting(false);
+      setCarregandoMeusJogos(false);
     }
-  }
+  };
 
-  if (!isLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border rounded-2xl p-12 max-w-md w-full"
-        >
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold mb-3">Acesso Restrito</h2>
-          <p className="text-muted-foreground mb-8 leading-relaxed">
-            Você precisa estar logado para publicar um jogo na plataforma.
-          </p>
-          <button
-            onClick={onRequestLogin}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2"
-          >
-            <Gamepad2 className="w-5 h-5" />
-            Fazer Login
-          </button>
-        </motion.div>
-      </div>
+  const handleDeletar = async (id) => {
+    try {
+      await api.delete(`/jogos/${id}`, { headers: { token } });
+      if (showToast) showToast("Jogo removido com sucesso!", "sucesso");
+      carregarMeusJogos();
+    } catch (err) {
+      if (showToast) showToast("Erro ao remover o jogo.", "erro");
+    }
+  };
+
+  const toggleGenero = (id) => {
+    setGenerosSelecionados(prev =>
+      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
     );
-  }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        titulo,
+        descricao,
+        preco: Number(preco),
+        desenvolvedora,
+        lancamento: lancamento ? new Date(lancamento).toISOString() : new Date().toISOString(),
+        capaUrl,
+        generoIds: generosSelecionados
+      };
+
+      const resJogo = await api.post('/jogos', payload, { headers: { token } });
+      const jogoId = resJogo.data.id;
+
+      const fotosExtras = [galeria1, galeria2, galeria3].filter(url => url.trim() !== "");
+
+      for (let i = 0; i < fotosExtras.length; i++) {
+        await api.post(`/jogos/${jogoId}/imagens`, {
+          url: fotosExtras[i],
+          legenda: `Screenshot ${i + 1}`,
+          ordem: i
+        }, { headers: { token } });
+      }
+
+      if (showToast) showToast("Jogo e galeria publicados com sucesso!", "sucesso");
+      
+      setTitulo("");
+      setDescricao("");
+      setPreco("");
+      setDesenvolvedora("");
+      setLancamento("");
+      setCapaUrl("");
+      setGenerosSelecionados([]);
+      setGaleria1("");
+      setGaleria2("");
+      setGaleria3("");
+      
+      setActiveTab("meus-jogos");
+
+    } catch (error) {
+      if (showToast) showToast("Erro ao publicar o jogo.", "erro");
+    }
+  };
+
+  if (!isLoggedIn) return null;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Upload className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-3xl font-bold">Publicar Jogo</h2>
-        </div>
+    <div className="max-w-4xl mx-auto">
+      <div className="flex gap-4 border-b border-white/10 mb-8 pb-4">
+        <button 
+          onClick={() => setActiveTab("publicar")}
+          className={`text-lg font-bold transition-colors ${activeTab === "publicar" ? "text-primary" : "text-muted-foreground hover:text-white"}`}
+        >
+          Publicar Novo Jogo
+        </button>
+        <button 
+          onClick={() => setActiveTab("meus-jogos")}
+          className={`text-lg font-bold transition-colors ${activeTab === "meus-jogos" ? "text-primary" : "text-muted-foreground hover:text-white"}`}
+        >
+          Meus Jogos
+        </button>
       </div>
 
-      {status === "success" && (
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 bg-primary/10 border border-primary/30 text-primary rounded-lg p-4 mb-6">
-          <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" />
-          <p className="font-semibold">Jogo publicado com sucesso!</p>
-        </motion.div>
+      {activeTab === "publicar" && (
+        <form onSubmit={handleSubmit} className="bg-card p-8 rounded-2xl border border-white/5 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-bold mb-2">Título *</label>
+              <input required value={titulo} onChange={e => setTitulo(e.target.value)} className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-2">Desenvolvedora *</label>
+              <input required value={desenvolvedora} onChange={e => setDesenvolvedora(e.target.value)} className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-2">Descrição *</label>
+            <textarea required rows="4" value={descricao} onChange={e => setDescricao(e.target.value)} className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-2">URL da Capa Principal *</label>
+            <input required type="url" value={capaUrl} onChange={e => setCapaUrl(e.target.value)} placeholder="https://..." className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+
+          <div className="bg-[#1a1a1a] p-6 rounded-lg border border-white/5">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Galeria de Imagens (Opcional)</h3>
+            <div className="space-y-4">
+              <input type="url" value={galeria1} onChange={e => setGaleria1(e.target.value)} placeholder="URL da Screenshot 1" className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary text-sm" />
+              <input type="url" value={galeria2} onChange={e => setGaleria2(e.target.value)} placeholder="URL da Screenshot 2" className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary text-sm" />
+              <input type="url" value={galeria3} onChange={e => setGaleria3(e.target.value)} placeholder="URL da Screenshot 3" className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary text-sm" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-bold mb-2">Preço (R$) *</label>
+              <input required type="number" step="0.01" min="0" value={preco} onChange={e => setPreco(e.target.value)} className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-2">Data de Lançamento</label>
+              <input required type="date" value={lancamento} onChange={e => setLancamento(e.target.value)} className="w-full p-3 bg-input rounded outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-4">Gêneros *</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {listaGeneros.map(g => (
+                <label key={g.id} className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={generosSelecionados.includes(g.id)} onChange={() => toggleGenero(g.id)} className="w-4 h-4 rounded text-primary focus:ring-primary" />
+                  <span className="text-sm">{g.nome}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" className="w-full bg-[#00ff9d] text-black font-black py-4 rounded-lg hover:bg-[#00e08a] transition-all mt-8">
+            Publicar Jogo
+          </button>
+        </form>
       )}
 
-      {status === "error" && (
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-4 mb-6">
-          <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-semibold">Erro ao publicar</p>
-            <p className="text-sm opacity-80">{errorMsg}</p>
-          </div>
-        </motion.div>
+      {activeTab === "meus-jogos" && (
+        <div className="bg-card p-8 rounded-2xl border border-white/5 min-h-[400px]">
+          {carregandoMeusJogos ? (
+            <div className="text-center text-muted-foreground py-10">Carregando seus jogos...</div>
+          ) : meusJogos.length === 0 ? (
+            <div className="text-center text-muted-foreground py-10">Você ainda não publicou nenhum jogo.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {meusJogos.map(jogo => (
+                <div key={jogo.id} className="flex items-center justify-between bg-background p-4 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-4">
+                    <img src={jogo.capaUrl} alt={jogo.titulo} className="w-16 h-16 object-cover rounded" onError={e => e.target.src = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1000&auto=format&fit=crop"} />
+                    <div>
+                      <h4 className="font-bold text-lg">{jogo.titulo}</h4>
+                      <p className="text-sm text-muted-foreground">R$ {jogo.preco.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDeletar(jogo.id)} className="p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
-
-      <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-8 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Título *</label>
-            <input required type="text" value={form.titulo} onChange={(e) => set("titulo", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Desenvolvedora *</label>
-            <input required type="text" value={form.desenvolvedora} onChange={(e) => set("desenvolvedora", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-2">Descrição *</label>
-          <textarea required value={form.descricao} onChange={(e) => set("descricao", e.target.value)} rows={4} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-2">URL da Capa *</label>
-          <input required type="url" value={form.capaUrl} onChange={(e) => set("capaUrl", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Preço (R$) *</label>
-            <input required type="number" min="0" step="0.01" value={form.preco} onChange={(e) => set("preco", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Data de Lançamento</label>
-            <input type="date" value={form.lancamento} onChange={(e) => set("lancamento", e.target.value)} className="w-full bg-input border border-border rounded-lg px-4 py-3" />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-3">Gêneros *</label>
-          <div className="flex flex-wrap gap-2">
-            {listaGeneros.map((genero) => (
-              <button key={genero.id} type="button" onClick={() => toggleGenero(genero.id)} className={`px-4 py-2 rounded-lg text-sm font-semibold ${form.generosSelecionados.includes(genero.id) ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                {genero.nome}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button type="submit" disabled={submitting} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3.5 rounded-lg font-bold text-lg">
-          {submitting ? "Publicando..." : "Publicar Jogo"}
-        </button>
-      </form>
     </div>
   );
 }

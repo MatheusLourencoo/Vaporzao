@@ -1,0 +1,45 @@
+import { Routes, Route } from "react-router-dom";
+
+// Páginas
+import { Home } from "../pages/Home";
+import { Biblioteca } from "../pages/Biblioteca";
+import { Wishlist } from "../pages/Wishlist";
+import { GameDetails } from "../pages/GameDetails";
+import PublicarJogo from '../components/PublicarJogo';
+
+export function AppRoutes({
+  searchQuery,
+  biblioteca,
+  wishlist,
+  adicionarNaBiblioteca,
+  removerDaBiblioteca,
+  adicionarNaWishlist,
+  removerDaWishlist,
+  isLoggedIn,
+  setShowLogin,
+  showToast
+}) {
+  return (
+    <Routes>
+      <Route path="/" element={
+        <Home 
+          searchQuery={searchQuery} 
+          adicionarNaBiblioteca={adicionarNaBiblioteca} 
+          adicionarNaWishlist={adicionarNaWishlist}
+        />
+      } />
+      <Route path="/biblioteca" element={
+        <Biblioteca biblioteca={biblioteca} removerDaBiblioteca={removerDaBiblioteca} />
+      } />
+      <Route path="/wishlist" element={
+        <Wishlist wishlist={wishlist} removerDaWishlist={removerDaWishlist} />
+      } />
+      <Route path="/publicar" element={
+        <PublicarJogo isLoggedIn={isLoggedIn} onRequestLogin={() => setShowLogin(true)} showToast={showToast} />
+      } />
+      <Route path="/jogo/:id" element={
+        <GameDetails adicionarNaBiblioteca={adicionarNaBiblioteca} adicionarNaWishlist={adicionarNaWishlist} showToast={showToast} />
+      } />
+    </Routes>
+  );
+}
