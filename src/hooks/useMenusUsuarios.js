@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
   const [biblioteca, setBiblioteca] = useState(() => JSON.parse(localStorage.getItem("vaporzao_biblioteca") || "[]"));
   const [wishlist, setWishlist] = useState(() => JSON.parse(localStorage.getItem("vaporzao_wishlist") || "[]"));
+
+  //Quando o usuario deslogar vai remover os jogos da wishlist e da biblioteca
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setBiblioteca([]);
+      setWishlist([]);
+      localStorage.removeItem("vaporzao_biblioteca");
+      localStorage.removeItem("vaporzao_wishlist");
+    }
+  }, [isLoggedIn]);
 
   const adicionarNaBiblioteca = (jogo) => {
     if (!isLoggedIn) { showToast("Inicie sessão!", "aviso"); setShowLogin(true); return; }

@@ -1,6 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-
-// Páginas
 import { Home } from "../pages/Home";
 import { Biblioteca } from "../pages/Biblioteca";
 import { Wishlist } from "../pages/Wishlist";

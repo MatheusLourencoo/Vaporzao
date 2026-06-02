@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Header } from "./components/header";
+import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { LoginModal } from "./components/LoginModal";
 import { ToastNotification } from "./components/ToastNotification";
