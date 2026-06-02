@@ -6,6 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { useGames } from "../hooks/useGames";
 
+// Função para remover acentos e deixar tudo  maiúsculas e minúsculas
+const normalizarBusca = (str) => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") 
+    .toLowerCase(); 
+};
+
 export function Home({ 
   searchQuery, 
   adicionarNaBiblioteca, 
@@ -18,10 +27,12 @@ export function Home({
   const [filtroPreco, setFiltroPreco] = useState([]);
   const [ordenarPor, setOrdenarPor] = useState("recentes");
   const [filtroPalavraChave, setFiltroPalavraChave] = useState("");
-
   const [isPrecoOpen, setIsPrecoOpen] = useState(false);
   const [isGeneroOpen, setIsGeneroOpen] = useState(true);
   const [isOrdemOpen, setIsOrdemOpen] = useState(false);
+  const [topAvaliados, setTopAvaliados] = useState([]);
+  const [itensVisiveis, setItensVisiveis] = useState(15);
+  const { games = [], carregando } = useGames({ generos: selectedGeneros });
 
   useEffect(() => {
     api.get('/generos')
@@ -30,7 +41,19 @@ export function Home({
         setListaGeneros(generosOrdenados);
       })
       .catch(console.error);
+
+    api.get('/jogos/destaques')
+      .then((r) => {
+        if (r.data && r.data.topAvaliados) {
+          setTopAvaliados(r.data.topAvaliados.slice(0, 6));
+        }
+      })
+      .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    setItensVisiveis(15);
+  }, [selectedGeneros, filtroPreco, ordenarPor, filtroPalavraChave]);
 
   const toggleGenero = (g) => {
     setSelectedGeneros(prev => prev.includes(g) ? prev.filter(i => i !== g) : [...prev, g]);
@@ -49,19 +72,20 @@ export function Home({
 
   const qtdFiltrosAtivos = selectedGeneros.length + filtroPreco.length;
 
-  const { games = [], carregando } = useGames({ generos: selectedGeneros });
-
   const jogosRecentes = [...games].sort((a, b) => {
     const dataA = new Date(a.createdAt || a.created_at || a.dataCriacao || a.data_criacao || 0).getTime();
     const dataB = new Date(b.createdAt || b.created_at || b.dataCriacao || b.data_criacao || 0).getTime();
-    return dataB - dataA;
-  }).slice(0, 5);
+    return dataB - dataA || b.id - a.id;
+  }).slice(0, 6);
 
   let jogosExibidos = [...games];
+  
+  // Normaliza o texto digitado pelo usuário antes de comparar
+  const buscaNormalizada = normalizarBusca(filtroPalavraChave);
 
-  if (filtroPalavraChave.trim() !== "") {
+  if (buscaNormalizada !== "") {
     jogosExibidos = jogosExibidos.filter(jogo => 
-      jogo.titulo.toLowerCase().includes(filtroPalavraChave.toLowerCase())
+      normalizarBusca(jogo.titulo).includes(buscaNormalizada)
     );
   }
 
@@ -79,13 +103,16 @@ export function Home({
     jogosExibidos.sort((a, b) => {
       const dataA = new Date(a.createdAt || a.created_at || a.dataCriacao || 0).getTime();
       const dataB = new Date(b.createdAt || b.created_at || b.dataCriacao || 0).getTime();
-      return dataB - dataA;
+      return dataB - dataA || b.id - a.id;
     });
   }
 
+  // Normaliza a busca também na barra lateral de Gêneros
   const generosFiltrados = listaGeneros.filter(g => 
-    g.nome.toLowerCase().includes(filtroPalavraChave.toLowerCase())
+    normalizarBusca(g.nome).includes(buscaNormalizada)
   );
+
+  const jogosPaginados = jogosExibidos.slice(0, itensVisiveis);
 
   return (
     <>
@@ -96,8 +123,23 @@ export function Home({
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-extrabold text-white">Adicionados Recentemente</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
             {jogosRecentes.map((game) => (
+              <div key={game.id} className="cursor-pointer group" onClick={() => navigate(`/jogo/${game.id}`)}>
+                <GameCard game={game} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {topAvaliados.length > 0 && (
+        <section className="mt-12 bg-zinc-900/30 p-8 rounded-2xl border border-white/5">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-extrabold text-white">Top Avaliados</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {topAvaliados.map((game) => (
               <div key={game.id} className="cursor-pointer group" onClick={() => navigate(`/jogo/${game.id}`)}>
                 <GameCard game={game} />
               </div>
@@ -188,15 +230,28 @@ export function Home({
             </div>
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 pb-16">
             {carregando ? (
               <div className="text-center py-12 text-zinc-400">Carregando catálogo...</div>
             ) : jogosExibidos.length === 0 ? (
                <div className="text-center py-12 text-zinc-400 bg-zinc-900/30 rounded-xl border border-white/5">Nenhum jogo encontrado.</div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                {jogosExibidos.map((game) => <GameCard key={game.id} game={game} onViewDetails={() => navigate(`/jogo/${game.id}`)} />)}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-5">
+                  {jogosPaginados.map((game) => <GameCard key={game.id} game={game} onViewDetails={() => navigate(`/jogo/${game.id}`)} />)}
+                </div>
+                
+                {itensVisiveis < jogosExibidos.length && (
+                  <div className="mt-12 flex justify-center">
+                    <button 
+                      onClick={() => setItensVisiveis(prev => prev + 15)}
+                      className="flex items-center gap-2 px-8 py-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-white/10 text-white font-bold rounded-lg transition-colors"
+                    >
+                      Carregar mais jogos <ChevronDown className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
