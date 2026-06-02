@@ -3,7 +3,7 @@ import { Header } from "./components/header";
 import { Footer } from "./components/Footer";
 import { LoginModal } from "./components/LoginModal";
 import { ToastNotification } from "./components/ToastNotification";
-import { AppRoutes } from "./routes/AppRoutes";
+import { AppRoutes } from "./routes/Routes";
 import { useToast } from "./hooks/useToast";
 import { useMenuUsuario } from "./hooks/useMenusUsuarios";
 
