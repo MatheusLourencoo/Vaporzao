@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { useGames } from "../hooks/useGames";
 
-// Função para remover acentos e deixar tudo  maiúsculas e minúsculas
+// Função para remover acentos e deixar tudo maiúsculas e minúsculas
 const normalizarBusca = (str) => {
   if (!str) return "";
   return str
@@ -32,13 +32,16 @@ export function Home({
   const [isOrdemOpen, setIsOrdemOpen] = useState(false);
   const [topAvaliados, setTopAvaliados] = useState([]);
   const [itensVisiveis, setItensVisiveis] = useState(15);
+  
   const { games = [], carregando } = useGames({ generos: selectedGeneros });
 
   useEffect(() => {
     api.get('/generos')
       .then((r) => {
-        const generosOrdenados = r.data.sort((a, b) => a.nome.localeCompare(b.nome));
-        setListaGeneros(generosOrdenados);
+        if (Array.isArray(r.data)) {
+          const generosOrdenados = [...r.data].sort((a, b) => a.nome.localeCompare(b.nome));
+          setListaGeneros(generosOrdenados);
+        }
       })
       .catch(console.error);
 
@@ -80,25 +83,26 @@ export function Home({
 
   let jogosExibidos = [...games];
   
-  // Normaliza o texto digitado pelo usuário antes de comparar
-  const buscaNormalizada = normalizarBusca(filtroPalavraChave);
+  // Normaliza o texto digitado pelo usuário (Header + Sidebar) antes de comparar
+  const termoDeBuscaFinal = filtroPalavraChave || searchQuery || "";
+  const buscaNormalizada = normalizarBusca(termoDeBuscaFinal);
 
   if (buscaNormalizada !== "") {
     jogosExibidos = jogosExibidos.filter(jogo => 
-      normalizarBusca(jogo.titulo).includes(buscaNormalizada)
+      normalizarBusca(jogo.titulo || "").includes(buscaNormalizada)
     );
   }
 
   if (filtroPreco.includes("gratis") && !filtroPreco.includes("pago")) {
-    jogosExibidos = jogosExibidos.filter(g => Number(g.preco) === 0);
+    jogosExibidos = jogosExibidos.filter(g => Number(g.preco || 0) === 0);
   } else if (filtroPreco.includes("pago") && !filtroPreco.includes("gratis")) {
-    jogosExibidos = jogosExibidos.filter(g => Number(g.preco) > 0);
+    jogosExibidos = jogosExibidos.filter(g => Number(g.preco || 0) > 0);
   }
 
   if (ordenarPor === "az") {
-    jogosExibidos.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    jogosExibidos.sort((a, b) => (a.titulo || "").localeCompare(b.titulo || ""));
   } else if (ordenarPor === "za") {
-    jogosExibidos.sort((a, b) => b.titulo.localeCompare(a.titulo));
+    jogosExibidos.sort((a, b) => (b.titulo || "").localeCompare(a.titulo || ""));
   } else if (ordenarPor === "recentes") {
     jogosExibidos.sort((a, b) => {
       const dataA = new Date(a.createdAt || a.created_at || a.dataCriacao || 0).getTime();
@@ -107,9 +111,8 @@ export function Home({
     });
   }
 
-  // Normaliza a busca também na barra lateral de Gêneros
   const generosFiltrados = listaGeneros.filter(g => 
-    normalizarBusca(g.nome).includes(buscaNormalizada)
+    normalizarBusca(g.nome).includes(normalizarBusca(filtroPalavraChave))
   );
 
   const jogosPaginados = jogosExibidos.slice(0, itensVisiveis);
@@ -155,7 +158,7 @@ export function Home({
             <div className="sticky top-24">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-[15px] font-bold text-zinc-100">Filtros {qtdFiltrosAtivos > 0 && <span>({qtdFiltrosAtivos})</span>}</h3>
-                {(qtdFiltrosAtivos > 0 || ordenarPor !== "recentes") && (
+                {(qtdFiltrosAtivos > 0 || ordenarPor !== "recentes" || filtroPalavraChave !== "") && (
                   <button onClick={limparFiltros} className="text-xs font-medium text-primary hover:underline">Redefinir</button>
                 )}
               </div>
@@ -171,6 +174,7 @@ export function Home({
                 />
               </div>
 
+              {/* ... Filtros de Preço, Gênero e Ordem ... */}
               <div className="border-b border-white/10">
                 <button onClick={() => setIsPrecoOpen(!isPrecoOpen)} className="flex items-center justify-between w-full py-4 text-zinc-200 hover:text-white font-bold text-sm">
                   Preço <ChevronDown className={`w-4 h-4 transition-transform ${isPrecoOpen ? 'rotate-180' : ''}`} />

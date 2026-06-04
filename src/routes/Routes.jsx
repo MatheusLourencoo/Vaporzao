@@ -3,7 +3,7 @@ import { Home } from "../pages/Home";
 import { Biblioteca } from "../pages/Biblioteca";
 import { Wishlist } from "../pages/Wishlist";
 import { GameDetails } from "../pages/GameDetails";
-import PublicarJogo from '../components/PublicarJogo';
+import PublicarJogo from '../pages/PublicarJogo';
 
 export function AppRoutes({
   searchQuery,
@@ -36,7 +36,13 @@ export function AppRoutes({
         <PublicarJogo isLoggedIn={isLoggedIn} onRequestLogin={() => setShowLogin(true)} showToast={showToast} />
       } />
       <Route path="/jogo/:id" element={
-        <GameDetails adicionarNaBiblioteca={adicionarNaBiblioteca} adicionarNaWishlist={adicionarNaWishlist} showToast={showToast} />
+        <GameDetails 
+          biblioteca={biblioteca}
+          wishlist={wishlist}
+          adicionarNaBiblioteca={adicionarNaBiblioteca} 
+          adicionarNaWishlist={adicionarNaWishlist} 
+          showToast={showToast} 
+        />
       } />
     </Routes>
   );

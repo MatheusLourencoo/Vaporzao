@@ -39,7 +39,6 @@ export function LoginModal({ onClose, onLoginSuccess }) {
     }
   };
 
-  // Serve para limpar os erros e alternar entre login e cadastro
   const toggleModo = () => {
     setIsRegistro(!isRegistro);
     setErro("");

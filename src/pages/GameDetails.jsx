@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, ArrowLeft, Clock } from "lucide-react";
+import { Star, ArrowLeft, Clock, Check } from "lucide-react";
 import { api } from "../services/api";
 
 const capasPadrao = [
@@ -10,36 +10,9 @@ const capasPadrao = [
 
 const obterCapaAlternativa = (titulo = "") => capasPadrao[titulo.length % capasPadrao.length];
 
-// Função para calcular "há quanto tempo" a review foi feita
-const calcularTempoDecorrido = (dataString) => {
-  if (!dataString) return "Recentemente";
-  
-  const dataPostagem = new Date(dataString);
-  const agora = new Date();
-  const diferencaMs = agora - dataPostagem;
-  
-  const minutos = Math.floor(diferencaMs / 60000);
-  const horas = Math.floor(minutos / 60);
-  const dias = Math.floor(horas / 24);
-  const semanas = Math.floor(dias / 7);
-  const meses = Math.floor(dias / 30);
-  const anos = Math.floor(dias / 365);
-
-  if (minutos < 1) return "Agora mesmo";
-  if (minutos < 60) return `há ${minutos} minuto${minutos > 1 ? 's' : ''}`;
-  if (horas < 24) return `há ${horas} hora${horas > 1 ? 's' : ''}`;
-  if (dias < 7) return `há ${dias} dia${dias > 1 ? 's' : ''}`;
-  if (semanas < 4) return `há ${semanas} semana${semanas > 1 ? 's' : ''}`;
-  if (meses < 12) return `há ${meses} mês${meses > 1 ? 'es' : ''}`;
-  return `há ${anos} ano${anos > 1 ? 's' : ''}`;
-};
-
-// Função para corrigir caracteres especiais e formatar o nome
-const formatarNomeReview = (nomeBruto) => {
-  if (!nomeBruto) return "Membro da Vaporzão";
-
-  let nomeCorrigido = String(nomeBruto);
-  
+const decodificarTexto = (textoBruto) => {
+  if (!textoBruto) return "";
+  let textoCorrigido = String(textoBruto);
   const mapaErros = {
     'Ã¡': 'á', 'Ã¢': 'â', 'Ã£': 'ã', 'Ã¤': 'ä',
     'Ã©': 'é', 'Ãª': 'ê', 'Ã«': 'ë',
@@ -56,40 +29,104 @@ const formatarNomeReview = (nomeBruto) => {
   };
 
   for (const [erro, certo] of Object.entries(mapaErros)) {
-    nomeCorrigido = nomeCorrigido.split(erro).join(certo);
+    textoCorrigido = textoCorrigido.split(erro).join(certo);
   }
 
   try {
-    nomeCorrigido = decodeURIComponent(escape(nomeCorrigido));
+    textoCorrigido = decodeURIComponent(escape(textoCorrigido));
+  } catch (e) {}
+
+  return textoCorrigido.trim();
+};
+
+const extrairValorApi = (campo) => {
+  if (!campo) return null;
+  if (typeof campo === 'string') return campo;
+  if (typeof campo === 'object') return campo.nome || campo.nomeUsuario || campo.titulo || null;
+  return String(campo);
+};
+
+const formatarNomeCompleto = (campo, padrao) => {
+  const valor = extrairValorApi(campo);
+  if (!valor) return padrao;
+  return decodificarTexto(valor);
+};
+
+const formatarPrimeiroEUltimoNome = (campo, padrao) => {
+  const valor = extrairValorApi(campo);
+  if (!valor) return padrao;
+  
+  const textoLimpo = decodificarTexto(valor).toLowerCase();
+  const partes = textoLimpo.split(/\s+/);
+  const capitalizar = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+  
+  if (partes.length <= 1) return capitalizar(partes[0]);
+  return `${capitalizar(partes[0])} ${capitalizar(partes[partes.length - 1])}`;
+};
+
+const formatarDataLancamento = (gameData) => {
+  const data = gameData.dataLancamento || gameData.createdAt || gameData.dataCriacao;
+  if (!data) return "Já disponível";
+  try {
+    return new Date(data).toLocaleDateString('pt-BR');
   } catch (e) {
+    return "Já disponível";
   }
+};
 
-  // Divide o nome, passa para minúsculo e pega Primeiro e Último nome
-  const partes = nomeCorrigido.toLowerCase().trim().split(/\s+/);
-  const capitalizar = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+const calcularTempoDecorrido = (dataString) => {
+  if (!dataString) return "Recentemente";
+  const dataPostagem = new Date(dataString);
+  const agora = new Date();
+  const diferencaMs = agora - dataPostagem;
+  const minutos = Math.floor(diferencaMs / 60000);
+  const horas = Math.floor(minutos / 60);
+  const dias = Math.floor(horas / 24);
+  const semanas = Math.floor(dias / 7);
+  const meses = Math.floor(dias / 30);
+  const anos = Math.floor(dias / 365);
 
-  if (partes.length === 1) return capitalizar(partes[0]);
-  const primeiroNome = partes[0];
-  const ultimoNome = partes[partes.length - 1];
-
-  return `${capitalizar(primeiroNome)} ${capitalizar(ultimoNome)}`;
+  if (minutos < 1) return "Agora mesmo";
+  if (minutos < 60) return `há ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+  if (horas < 24) return `há ${horas} hora${horas > 1 ? 's' : ''}`;
+  if (dias < 7) return `há ${dias} dia${dias > 1 ? 's' : ''}`;
+  if (semanas < 4) return `há ${semanas} semana${semanas > 1 ? 's' : ''}`;
+  if (meses < 12) return `há ${meses} mês${meses > 1 ? 'es' : ''}`;
+  return `há ${anos} ano${anos > 1 ? 's' : ''}`;
 };
 
 export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBiblioteca, adicionarNaWishlist, showToast }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  
   const [game, setGame] = useState(null);
   const [galeria, setGaleria] = useState([]);
   const [imagemDestaque, setImagemDestaque] = useState("");
+  
   const [reviewNota, setReviewNota] = useState(5);
   const [reviewTexto, setReviewTexto] = useState("");
   const [reviews, setReviews] = useState([]);
-  const [reviewFeita, setReviewFeita] = useState(false);
+  
   const [localInLib, setLocalInLib] = useState(false);
   const [localInWish, setLocalInWish] = useState(false);
+  const [processandoObter, setProcessandoObter] = useState(false);
+  const [processandoWishlist, setProcessandoWishlist] = useState(false);
+  const [processandoReview, setProcessandoReview] = useState(false);
+  
   const token = localStorage.getItem("vaporzao_token");
 
   useEffect(() => {
+    if (biblioteca && id) {
+      setLocalInLib(biblioteca.some(g => String(g.id) === String(id) || String(g.jogoId) === String(id)));
+    }
+    if (wishlist && id) {
+      setLocalInWish(wishlist.some(g => String(g.id) === String(id) || String(g.jogoId) === String(id)));
+    }
+  }, [biblioteca, wishlist, id]);
+
+  useEffect(() => {
+    if (!id || id === "undefined") return;
+
     window.scrollTo(0, 0);
 
     api.get(`/jogos/${id}`)
@@ -97,34 +134,34 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
         setGame(res.data);
         setImagemDestaque(res.data.capaUrl || obterCapaAlternativa(res.data.titulo));
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        const msg = err.response?.data?.message || err.response?.data?.error || "Erro ao carregar dados do jogo.";
+        showToast(msg, "erro");
+      });
 
     api.get(`/jogos/${id}/imagens`)
       .then(res => setGaleria(res.data))
-      .catch(err => console.error(err));
+      .catch(() => {});
 
     api.get(`/jogos/${id}/reviews`)
       .then(res => setReviews(res.data))
-      .catch(err => console.error(err));
-
-    if (token) {
-      api.get('/biblioteca/me', { headers: { token } })
-        .then(res => setLocalInLib(res.data.some(g => String(g.id) === String(id))))
-        .catch(err => console.error(err));
-
-      api.get('/wishlist/me', { headers: { token } })
-        .then(res => setLocalInWish(res.data.some(g => String(g.id) === String(id))))
-        .catch(err => console.error(err));
-
-      api.get(`/jogos/${id}/status`, { headers: { token } })
-        .then(res => setReviewFeita(res.data.review || res.data.revisado || res.data.hasReview || false))
-        .catch(err => console.error(err));
-    }
-  }, [id, token]);
+      .catch(() => {});
+  }, [id, token, showToast]);
 
   const handlePublicarAvaliacao = async () => {
-    if (!token) return showToast("Autenticação necessária para avaliar o título.", "aviso");
+    if (!token) {
+      showToast("Autenticação necessária para avaliar o título.", "aviso");
+      return;
+    }
     
+    if (!reviewTexto.trim()) {
+      showToast("Escreva um comentário para publicar sua avaliação.", "aviso");
+      return;
+    }
+
+    if (processandoReview) return;
+    
+    setProcessandoReview(true);
     try {
       await api.post(`/jogos/${id}/reviews`, 
         { nota: reviewNota, texto: reviewTexto, recomenda: reviewNota >= 3 },
@@ -132,44 +169,100 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
       );
       const res = await api.get(`/jogos/${id}/reviews`);
       setReviews(res.data);
-      setReviewFeita(true);
       setReviewTexto("");
       setReviewNota(5);
-      showToast("Avaliação publicada com sucesso!", "sucesso");
+      showToast("Sua avaliação foi publicada com sucesso!", "sucesso");
     } catch (err) { 
-      showToast("Erro ao publicar avaliação no servidor.", "erro"); 
+      const msg = err.response?.data?.message || err.response?.data?.error || "Erro ao publicar avaliação. Tente novamente.";
+      showToast(msg, "erro"); 
+    } finally {
+      setProcessandoReview(false);
     }
   };
 
   const handleObter = async () => {
-    if (!token) return showToast("Autenticação necessária para registrar licenças.", "aviso");
-    if (localInLib) return showToast("Este título já consta na sua biblioteca de jogos.", "aviso");
+    if (!token) {
+      showToast("Faça login para adicionar jogos à sua biblioteca.", "aviso");
+      return;
+    }
+    if (localInLib) {
+      showToast(`O jogo "${game?.titulo}" já está na sua biblioteca!`, "aviso");
+      return;
+    }
+    if (processandoObter) return;
 
+    setProcessandoObter(true);
     try {
       await api.post(`/biblioteca/${id}`, {}, { headers: { token } });
-      setLocalInLib(true);
       if (adicionarNaBiblioteca) adicionarNaBiblioteca(game);
-      showToast("Licença adicionada à sua conta!", "sucesso");
-    } catch (error) {
-      showToast("Falha de comunicação com os servidores.", "erro");
+      showToast(`"${game?.titulo}" foi adicionado à sua biblioteca!`, "sucesso");
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || "Não foi possível adicionar o jogo.";
+      showToast(msg, "erro");
+    } finally {
+      setProcessandoObter(false);
     }
   };
 
   const handleWishlist = async () => {
-    if (!token) return showToast("Autenticação necessária.", "aviso");
-    if (localInWish) return showToast("Este título já está sendo monitorado na sua lista de desejos.", "aviso");
+    if (!token) {
+      showToast("Faça login para gerenciar sua lista de desejos.", "aviso");
+      return;
+    }
+    if (localInWish) {
+      showToast(`O jogo "${game?.titulo}" já está na sua lista de desejos!`, "aviso");
+      return;
+    }
+    if (processandoWishlist) return;
 
+    setProcessandoWishlist(true);
     try {
       await api.post(`/wishlist/${id}`, {}, { headers: { token } });
-      setLocalInWish(true);
       if (adicionarNaWishlist) adicionarNaWishlist(game);
-      showToast("Título inserido na sua lista de desejos!", "sucesso");
-    } catch (error) {
-      showToast("Falha ao atualizar a lista no servidor.", "erro");
+      showToast(`"${game?.titulo}" foi adicionado à sua lista de desejos!`, "sucesso");
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || "Não foi possível adicionar à lista.";
+      showToast(msg, "erro");
+    } finally {
+      setProcessandoWishlist(false);
     }
   };
 
-  if (!game) return <div className="text-center py-20 text-muted-foreground">Estabelecendo conexão...</div>;
+  if (!game) {
+    return (
+      <div className="min-h-screen bg-background text-foreground pb-20">
+        <div className="max-w-5xl mx-auto pt-8 px-6">
+          <div className="w-24 h-4 bg-zinc-800 rounded animate-pulse mb-6"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="w-3/4 h-12 bg-zinc-800 rounded-lg animate-pulse"></div>
+              <div className="w-full h-[400px] bg-zinc-800 rounded-xl animate-pulse"></div>
+              <div className="flex gap-4 overflow-hidden">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-32 h-20 bg-zinc-800 rounded-lg animate-pulse shrink-0"></div>
+                ))}
+              </div>
+              <div className="space-y-4 pt-4">
+                <div className="w-48 h-8 bg-zinc-800 rounded animate-pulse"></div>
+                <div className="w-full h-4 bg-zinc-800 rounded animate-pulse"></div>
+                <div className="w-full h-4 bg-zinc-800 rounded animate-pulse"></div>
+                <div className="w-5/6 h-4 bg-zinc-800 rounded animate-pulse"></div>
+              </div>
+            </div>
+            <div className="lg:col-span-1">
+              <div className="bg-card p-6 rounded-2xl border border-white/5 sticky top-24">
+                <div className="w-32 h-10 bg-zinc-800 rounded animate-pulse mb-6"></div>
+                <div className="flex flex-col gap-3">
+                  <div className="w-full h-14 bg-zinc-800 rounded-lg animate-pulse"></div>
+                  <div className="w-full h-14 bg-zinc-800 rounded-lg animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
@@ -183,7 +276,6 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
             <h1 className="text-5xl font-extrabold tracking-tight">{game.titulo}</h1>
             
             <div className="space-y-4">
-            
               <img 
                 src={imagemDestaque} 
                 alt={game.titulo}
@@ -211,6 +303,7 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
                         imagemDestaque === img.url ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                       alt={`Screenshot ${index + 1}`}
+                      onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   ))}
                 </div>
@@ -256,39 +349,36 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
             <section className="border-t border-white/10 pt-8">
               <h2 className="text-2xl font-bold mb-6">Avaliações</h2>
               
-              {!reviewFeita && (
-                <div className="bg-card border border-border p-6 rounded-xl mb-8">
-                  <div className="flex gap-1 mb-4">
-                    {[1, 2, 3, 4, 5].map((estrela) => (
-                      <Star 
-                        key={estrela} 
-                        className={`w-8 h-8 cursor-pointer transition-colors ${estrela <= reviewNota ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} 
-                        onClick={() => setReviewNota(estrela)} 
-                      />
-                    ))}
-                    <span className="ml-3 font-bold text-lg">{reviewNota} / 5</span>
-                  </div>
-                  <textarea 
-                    value={reviewTexto} 
-                    onChange={(e) => setReviewTexto(e.target.value)} 
-                    placeholder="Conte para a comunidade o que você achou do jogo..." 
-                    className="w-full p-4 mb-4 bg-input rounded-lg border border-border outline-none focus:ring-2 focus:ring-primary min-h-[120px] resize-y" 
-                  />
-                  <button onClick={handlePublicarAvaliacao} className="bg-[#00ff9d] text-black font-black px-8 py-3 rounded-lg hover:bg-[#00e08a] transition-colors">Publicar Avaliação</button>
+              <div className="bg-card border border-border p-6 rounded-xl mb-8">
+                <div className="flex gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((estrela) => (
+                    <Star 
+                      key={estrela} 
+                      className={`w-8 h-8 cursor-pointer transition-colors ${estrela <= reviewNota ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} 
+                      onClick={() => setReviewNota(estrela)} 
+                    />
+                  ))}
+                  <span className="ml-3 font-bold text-lg">{reviewNota} / 5</span>
                 </div>
-              )}
+                <textarea 
+                  value={reviewTexto} 
+                  onChange={(e) => setReviewTexto(e.target.value)} 
+                  placeholder="Conte para a comunidade o que você achou do jogo..." 
+                  className="w-full p-4 mb-4 bg-input rounded-lg border border-border outline-none focus:ring-2 focus:ring-primary min-h-[120px] resize-y" 
+                />
+                <button 
+                  onClick={handlePublicarAvaliacao} 
+                  disabled={processandoReview}
+                  className="bg-[#00ff9d] text-black font-black px-8 py-3 rounded-lg hover:bg-[#00e08a] transition-colors disabled:opacity-70 disabled:cursor-wait"
+                >
+                  {processandoReview ? "Publicando..." : "Publicar Avaliação"}
+                </button>
+              </div>
 
               <div className="space-y-4">
                 {reviews.length > 0 ? reviews.map((r, i) => {
                   const notaNormalizada = r.nota > 5 ? Math.round(r.nota / 2) : r.nota;
-                  
-                  let nomeBruto = r.usuario?.nome || r.nomeUsuario || r.autor || "Membro da Vaporzão";
-                  
-                  if (typeof nomeBruto === 'object' && nomeBruto !== null) {
-                    nomeBruto = nomeBruto.nome || nomeBruto.nomeUsuario || "Membro da Vaporzão";
-                  }
-                  
-                  const nomeExibicao = formatarNomeReview(nomeBruto);
+                  const nomeExibicao = formatarPrimeiroEUltimoNome(r.usuario || r.nomeUsuario || r.autor, "Membro da Vaporzão");
                   const inicial = nomeExibicao.charAt(0).toUpperCase();
                   const dataPostagem = r.createdAt || r.dataCriacao || r.data || null;
                   const tempoFormatado = calcularTempoDecorrido(dataPostagem);
@@ -331,29 +421,76 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
 
           <div className="lg:col-span-1">
             <div className="bg-card p-6 rounded-2xl border border-white/5 sticky top-24">
-              <div className="text-3xl font-bold mb-6 text-white">R$ {game.preco > 0 ? game.preco.toFixed(2) : "Gratuito"}</div>
+              <div className="text-3xl font-bold mb-6 text-white">
+                {game.preco > 0 ? `R$ ${game.preco.toFixed(2)}` : "Gratuito"}
+              </div>
+              
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={handleObter} 
-                  className={`w-full font-black py-4 rounded-lg transition-all ${
-                    localInLib 
-                      ? "bg-[#2a2a2a] text-muted-foreground cursor-default" 
-                      : "bg-[#00ff9d] text-black hover:bg-[#00e08a]"
+                  disabled={processandoObter}
+                  className={`w-full flex items-center justify-center gap-2 font-black py-4 rounded-lg transition-all ${
+                    processandoObter
+                      ? "bg-[#00ff9d] text-black opacity-70 cursor-wait"
+                      : localInLib 
+                      ? "bg-white/5 text-white hover:bg-white/10 border border-white/10"
+                      : "bg-[#00ff9d] text-black hover:bg-[#00e08a] shadow-[0_0_15px_rgba(0,255,157,0.2)] hover:shadow-[0_0_25px_rgba(0,255,157,0.4)]"
                   }`}
                 >
-                  {localInLib ? "Na Biblioteca" : "Obter"}
+                  {processandoObter ? (
+                    "Adicionando..."
+                  ) : localInLib ? (
+                    <>
+                      <Check className="w-5 h-5 text-[#00ff9d]" /> Na Biblioteca
+                    </>
+                  ) : (
+                    "Obter"
+                  )}
                 </button>
                 <button 
                   onClick={handleWishlist} 
-                  className={`w-full font-bold py-4 rounded-lg transition-all border ${
-                    localInWish
-                      ? "bg-[#1a1a1a] border-white/5 text-muted-foreground cursor-default"
-                      : "bg-[#2a2a2a] text-white hover:bg-[#3d3d3d] border-white/10"
+                  disabled={processandoWishlist}
+                  className={`w-full flex items-center justify-center gap-2 font-bold py-4 rounded-lg transition-all border ${
+                    processandoWishlist
+                      ? "bg-[#2a2a2a] border-white/10 text-white opacity-70 cursor-wait"
+                      : localInWish
+                      ? "bg-transparent border-white/10 text-white hover:bg-white/5"
+                      : "bg-[#2a2a2a] border-white/10 text-white hover:bg-[#3d3d3d]"
                   }`}
                 >
-                  {localInWish ? "Na Lista de Desejos" : "Lista de desejos"}
+                  {processandoWishlist ? (
+                    "Adicionando..."
+                  ) : localInWish ? (
+                    <>
+                      <Check className="w-5 h-5 text-white" /> Na Lista de Desejos
+                    </>
+                  ) : (
+                    "Lista de desejos"
+                  )}
                 </button>
               </div>
+
+              <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-zinc-400 whitespace-nowrap">Desenvolvedor</span>
+                  <span className="text-white font-medium text-right break-words line-clamp-2">
+                    {formatarNomeCompleto(game.desenvolvedora || game.desenvolvedor, "Não informado")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-zinc-400 whitespace-nowrap">Autor / Editora</span>
+                  <span className="text-white font-medium text-right break-words line-clamp-2">
+                    {formatarPrimeiroEUltimoNome(game.autor || game.publicadora, "Não informado")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-zinc-400 whitespace-nowrap">Lançamento</span>
+                  <span className="text-white font-medium text-right whitespace-nowrap">
+                    {formatarDataLancamento(game)}
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
