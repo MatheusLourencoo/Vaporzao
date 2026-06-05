@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { Home } from "../pages/Home";
-import { Biblioteca } from "../pages/Biblioteca";
+import Biblioteca from "../pages/Biblioteca";
 import { Wishlist } from "../pages/Wishlist";
 import { GameDetails } from "../pages/GameDetails";
 import PublicarJogo from '../pages/PublicarJogo';

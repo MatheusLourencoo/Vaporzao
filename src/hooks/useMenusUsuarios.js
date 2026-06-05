@@ -4,101 +4,169 @@ import { api } from "../services/api";
 export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
   const [biblioteca, setBiblioteca] = useState([]);
   const [wishlist, setWishlist] = useState([]);
-  const token = localStorage.getItem("vaporzao_token");
-
-  const carregarDados = () => {
-    if (isLoggedIn && token) {
-      api.get('/biblioteca/me', { headers: { token } })
-        .then(res => setBiblioteca(res.data || []))
-        .catch(() => setBiblioteca([]));
-
-      api.get('/wishlist/me', { headers: { token } })
-        .then(res => setWishlist(res.data || []))
-        .catch(() => setWishlist([]));
-    } else {
-      setBiblioteca([]);
-      setWishlist([]);
-    }
-  };
+  const getToken = () => localStorage.getItem("vaporzao_token");
 
   useEffect(() => {
     carregarDados();
-  }, [isLoggedIn, token]);
+  }, [isLoggedIn]);
 
-  const adicionarNaBiblioteca = async (jogo) => {
-    if (!isLoggedIn) { 
-      showToast("Sessão expirada. Autenticação necessária.", "aviso"); 
-      setShowLogin(true); 
-      return; 
+  async function carregarDados() {
+    const token = getToken();
+
+    if (!isLoggedIn || !token) {
+      setBiblioteca([]);
+      setWishlist([]);
+      return;
     }
-    
-    if (biblioteca.some(g => String(g.id) === String(jogo.id) || String(g.jogoId) === String(jogo.id))) return;
 
     try {
-      await api.post(`/biblioteca/${jogo.id}`, {}, { headers: { token } });
-      setBiblioteca(prev => [...prev, jogo]);
-      showToast(`'${jogo.titulo}' foi adicionado à sua biblioteca.`, "sucesso");
+      // AJUSTE 1: Header corrigido para o padrão da sua API
+      const resBiblioteca = await api.get("/biblioteca/me", {
+        headers: { token }
+      });
+
+      const resWishlist = await api.get("/wishlist/me", {
+        headers: { token }
+      });
+
+      // AJUSTE 2: Extrai o jogo, mas mantém as horas jogadas para o CardBiblioteca funcionar!
+      const bibliotecaFormatada = (resBiblioteca.data || []).map((item) => {
+        if (item.jogo) {
+          return {
+            ...item.jogo,
+            horasJogadas: item.horasJogadas || item["horas Jogadas"] || 0
+          };
+        }
+        return item;
+      });
+
+      const wishlistFormatada = (resWishlist.data || []).map((item) => {
+        return item.jogo ? { ...item.jogo } : item;
+      });
+
+      setBiblioteca(bibliotecaFormatada);
+      setWishlist(wishlistFormatada);
+
     } catch (error) {
-      if (error.response?.status === 400 || error.response?.status === 409) {
-        carregarDados();
-        showToast("Este título já consta na sua biblioteca.", "aviso");
-      } else {
-        showToast("Falha de comunicação com os servidores da loja.", "erro");
-      }
+      console.log("ERRO AO CARREGAR:", error);
+      setBiblioteca([]);
+      setWishlist([]);
     }
-  };
+  }
 
-  const removerDaBiblioteca = async (id) => {
+  async function adicionarNaBiblioteca(jogo) {
+    const token = getToken();
+
+    if (!token) {
+      showToast("Faça login primeiro.", "aviso");
+      setShowLogin(true);
+      return;
+    }
+
+    const jaExiste = biblioteca.some(
+      (g) => String(g.id || g.jogoId) === String(jogo.id)
+    );
+
+    if (jaExiste) {
+      showToast("Esse jogo já está na biblioteca.", "aviso");
+      return;
+    }
+
     try {
-      if (id) await api.delete(`/biblioteca/${id}`, { headers: { token } });
+      await api.post(
+        `/biblioteca/${jogo.id}`,
+        {},
+        { headers: { token } } // Header corrigido
+      );
+
+      await carregarDados();
+      showToast(`'${jogo.titulo}' adicionado à biblioteca.`, "sucesso");
+
+    } catch (error) {
+      console.log("ERRO AO ADICIONAR:", error);
+      showToast("Erro ao adicionar jogo.", "erro");
+    }
+  }
+
+  async function removerDaBiblioteca(id) {
+    const token = getToken();
+
+    try {
+      await api.delete(`/biblioteca/${id}`, {
+        headers: { token } // Header corrigido
+      });
+
+      setBiblioteca((prev) =>
+        prev.filter((g) => String(g.id || g.jogoId) !== String(id))
+      );
+
       showToast("Jogo removido da biblioteca.", "sucesso");
     } catch (error) {
-      showToast("Registro removido com sucesso.", "sucesso");
-    } finally {
-      setBiblioteca(prev => prev.filter(g => String(g.id) !== String(id) && String(g.jogoId) !== String(id)));
+      console.log("ERRO AO REMOVER:", error);
+      showToast("Erro ao remover jogo.", "erro");
     }
-  };
+  }
 
-  const adicionarNaWishlist = async (jogo) => {
-    if (!isLoggedIn) { 
-      showToast("Sessão expirada. Autenticação necessária.", "aviso"); 
-      setShowLogin(true); 
-      return; 
+  async function adicionarNaWishlist(jogo) {
+    const token = getToken();
+
+    if (!token) {
+      showToast("Faça login primeiro.", "aviso");
+      setShowLogin(true);
+      return;
     }
 
-    if (wishlist.some(g => String(g.id) === String(jogo.id) || String(g.jogoId) === String(jogo.id))) return;
+    const jaExiste = wishlist.some(
+      (g) => String(g.id || g.jogoId) === String(jogo.id)
+    );
+
+    if (jaExiste) {
+      showToast("Esse jogo já está na wishlist.", "aviso");
+      return;
+    }
 
     try {
-      await api.post(`/wishlist/${jogo.id}`, {}, { headers: { token } });
-      setWishlist(prev => [...prev, jogo]);
-      showToast(`'${jogo.titulo}' inserido na sua lista de desejos.`, "sucesso");
-    } catch (error) {
-      if (error.response?.status === 400 || error.response?.status === 409) {
-        carregarDados();
-        showToast("Este título já consta na sua lista de desejos.", "aviso");
-      } else {
-        showToast("Falha ao atualizar a lista no servidor.", "erro");
-      }
-    }
-  };
+      await api.post(
+        `/wishlist/${jogo.id}`,
+        {},
+        { headers: { token } } // Header corrigido
+      );
 
-  const removerDaWishlist = async (id) => {
+      await carregarDados();
+      showToast(`'${jogo.titulo}' adicionado à wishlist.`, "sucesso");
+
+    } catch (error) {
+      console.log("ERRO AO ADICIONAR WISHLIST:", error);
+      showToast("Erro ao adicionar jogo.", "erro");
+    }
+  }
+
+  async function removerDaWishlist(id) {
+    const token = getToken();
+
     try {
-      if (id) await api.delete(`/wishlist/${id}`, { headers: { token } });
-      showToast("Jogo removido da lista de desejos.", "sucesso");
-    } catch (error) {
-      showToast("Registro removido com sucesso.", "sucesso");
-    } finally {
-      setWishlist(prev => prev.filter(g => String(g.id) !== String(id) && String(g.jogoId) !== String(id)));
-    }
-  };
+      await api.delete(`/wishlist/${id}`, {
+        headers: { token } // Header corrigido
+      });
 
-  return { 
-    biblioteca, 
-    wishlist, 
-    adicionarNaBiblioteca, 
-    removerDaBiblioteca, 
-    adicionarNaWishlist, 
-    removerDaWishlist 
+      setWishlist((prev) =>
+        prev.filter((g) => String(g.id || g.jogoId) !== String(id))
+      );
+
+      showToast("Jogo removido da wishlist.", "sucesso");
+    } catch (error) {
+      console.log("ERRO AO REMOVER WISHLIST:", error);
+      showToast("Erro ao remover jogo.", "erro");
+    }
+  }
+
+  return {
+    biblioteca,
+    wishlist,
+    carregarDados,
+    adicionarNaBiblioteca,
+    removerDaBiblioteca,
+    adicionarNaWishlist,
+    removerDaWishlist
   };
 }

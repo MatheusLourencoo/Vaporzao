@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Header } from "./components/header.jsx";
 import { Footer } from "./components/Footer";
 import { LoginModal } from "./components/LoginModal";
@@ -9,7 +9,7 @@ import { useMenuUsuario } from "./hooks/useMenusUsuarios";
 
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem("vaporzao_token"));
   const [searchQuery, setSearchQuery] = useState("");
   const { toast, showToast } = useToast();
   const { 
@@ -17,10 +17,6 @@ export default function App() {
     adicionarNaBiblioteca, removerDaBiblioteca, 
     adicionarNaWishlist, removerDaWishlist 
   } = useMenuUsuario(isLoggedIn, setShowLogin, showToast);
-
-  useEffect(() => {
-    if (localStorage.getItem("vaporzao_token")) setIsLoggedIn(true);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">

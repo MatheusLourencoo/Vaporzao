@@ -16,7 +16,6 @@ const InputGaleria = ({ valor, setValor, placeholder }) => (
         type="button" 
         onClick={() => setValor("")} 
         className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" 
-        title="Remover imagem"
       >
         <X className="w-4 h-4" />
       </button>
@@ -24,7 +23,7 @@ const InputGaleria = ({ valor, setValor, placeholder }) => (
   </div>
 );
 
-export function FormularioJogo({ token, listaGeneros, dadosEdicao, onSucesso, onCancelar, showToast }) {
+export function FormularioJogo({ listaGeneros, dadosEdicao, onSucesso, onCancelar, showToast }) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [desenvolvedora, setDesenvolvedora] = useState("");
@@ -43,7 +42,6 @@ export function FormularioJogo({ token, listaGeneros, dadosEdicao, onSucesso, on
 
   const jogoEmEdicao = dadosEdicao ? dadosEdicao.id : null;
 
-  // Se o usuário clicou em editar preenche o formulário automaticamente
   useEffect(() => {
     if (dadosEdicao) {
       setTitulo(dadosEdicao.titulo || "");
@@ -92,6 +90,8 @@ export function FormularioJogo({ token, listaGeneros, dadosEdicao, onSucesso, on
     if (!hasChanges) return;
     setSalvando(true);
     
+    const token = localStorage.getItem("vaporzao_token");
+
     try {
       const payload = {
         titulo: titulo.trim(), descricao: descricao.trim(), preco: Number(preco),
@@ -118,7 +118,11 @@ export function FormularioJogo({ token, listaGeneros, dadosEdicao, onSucesso, on
       if (jogoEmEdicao) {
         const imagensParaDeletar = imagensOriginais.filter(img => !urlsAtuaisDaTela.includes(img.url));
         for (const img of imagensParaDeletar) {
-          try { await api.delete(`/jogos/${jogoId}/imagens/${img.id}`, { headers: { token } }); } catch(err) {}
+          try { 
+            await api.delete(`/jogos/${jogoId}/imagens/${img.id}`, { headers: { token } }); 
+          } catch(err) {
+            if (showToast) showToast("Falha ao remover imagem antiga.", "aviso");
+          }
         }
       }
 
@@ -142,13 +146,15 @@ export function FormularioJogo({ token, listaGeneros, dadosEdicao, onSucesso, on
               url: imagensNovas[i].url, legenda: imagensNovas[i].legenda,
               ordem: jogoEmEdicao ? imagensOriginais.length + i : i
             }, { headers: { token } });
-          } catch(err) {}
+          } catch(err) {
+            if (showToast) showToast(`Falha ao salvar a imagem ${i + 1}.`, "aviso");
+          }
         }
       }
 
       if (showToast) showToast(jogoEmEdicao ? "Jogo atualizado com sucesso!" : "Jogo publicado com sucesso!", "sucesso");
       limparFormularioInterno();
-      onSucesso(); 
+      onSucesso();
 
     } catch (error) {
       if (showToast) showToast(jogoEmEdicao ? "Erro ao atualizar o jogo." : "Erro ao publicar o jogo.", "erro");

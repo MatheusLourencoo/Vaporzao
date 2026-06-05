@@ -1,21 +1,24 @@
 import { useState } from "react";
 import { Library, Trash2 } from "lucide-react";
-import { GameCard } from "../components/GameCard";
+import { CardBiblioteca } from "../components/CardBiblioteca";
 import { useNavigate } from "react-router-dom";
 
-export function Biblioteca({ 
+export default function Biblioteca({ 
   biblioteca, 
-  removerDaBiblioteca 
+  removerDaBiblioteca,
+  showToast 
 }) {
   const [jogoParaRemover, setJogoParaRemover] = useState(null);
   const navigate = useNavigate();
+  const token = localStorage.getItem("vaporzao_token"); 
+
   const listaValida = biblioteca.filter(game => game && (game.id || game.jogoId));
 
   return (
     <>
       <div className="py-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto px-4">
         <div className="flex items-center gap-3 mb-8">
-          <Library className="w-8 h-8 text-primary" />
+          <Library className="w-8 h-8 text-[#00ff9d]" />
           <h1 className="text-3xl font-bold">Minha Biblioteca</h1>
         </div>
 
@@ -29,17 +32,20 @@ export function Biblioteca({
             {listaValida.map((game) => (
               <div 
                 key={game.id || game.jogoId} 
-                className="relative group cursor-pointer" 
-                onClick={() => navigate(`/jogo/${game.id || game.jogoId}`)}
+                className="relative group" 
               >
-                <GameCard game={game} />
+                <CardBiblioteca 
+                  jogo={game} 
+                  token={token}
+                  showToast={showToast}
+                />
                 
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setJogoParaRemover(game);
                   }}
-                  className="absolute top-2 right-2 p-2 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                  className="absolute top-2 right-2 p-2 bg-red-500/90 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
                   title="Remover da biblioteca"
                 >
                   <Trash2 className="w-4 h-4" />

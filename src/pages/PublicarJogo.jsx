@@ -9,9 +9,8 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
   const [meusJogos, setMeusJogos] = useState([]);
   const [carregandoMeusJogos, setCarregandoMeusJogos] = useState(false);
   const [listaGeneros, setListaGeneros] = useState([]);
-  const [dadosEdicao, setDadosEdicao] = useState(null); // Aqui guardamos o jogo pra editar
+  const [dadosEdicao, setDadosEdicao] = useState(null);
   const [jogoParaDeletar, setJogoParaDeletar] = useState(null);
-  const token = localStorage.getItem("vaporzao_token");
 
   useEffect(() => {
     if (!isLoggedIn) onRequestLogin();
@@ -19,11 +18,16 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
   }, [isLoggedIn, onRequestLogin]);
 
   useEffect(() => {
-    if (activeTab === "meus-jogos" && token) carregarMeusJogos();
-  }, [activeTab, token]);
+    const token = localStorage.getItem("vaporzao_token");
+    if (activeTab === "meus-jogos" && token && meusJogos.length === 0) {
+      carregarMeusJogos();
+    }
+  }, [activeTab]);
 
   const carregarMeusJogos = async () => {
     setCarregandoMeusJogos(true);
+    const token = localStorage.getItem("vaporzao_token");
+    
     try {
       const resMe = await api.get('/auth/me', { headers: { token } });
       const matricula = resMe.data.matricula;
@@ -38,6 +42,8 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
   };
 
   const handleDeletar = async (id) => {
+    const token = localStorage.getItem("vaporzao_token");
+    
     try {
       if (id) await api.delete(`/jogos/${id}`, { headers: { token } });
       if (showToast) showToast("Jogo removido com sucesso!", "sucesso");
@@ -51,6 +57,7 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
 
   const handleEditarClick = async (jogoResumo) => {
     const id = jogoResumo.id || jogoResumo.jogoId;
+    
     try {
       const resJogo = await api.get(`/jogos/${id}`);
       const jogoCompleto = resJogo.data;
@@ -62,6 +69,7 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
 
       let imagens = [];
       let g1 = "", g2 = "", g3 = "", g4 = "", vUrl = "";
+      
       try {
         const resImagens = await api.get(`/jogos/${id}/imagens`);
         imagens = resImagens.data || [];
@@ -85,7 +93,7 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
         })
       });
 
-      setActiveTab("publicar"); 
+      setActiveTab("publicar");
     } catch (error) {
       if (showToast) showToast("Erro ao carregar dados completos do jogo.", "erro");
     }
@@ -113,7 +121,6 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
 
         {activeTab === "publicar" ? (
           <FormularioJogo 
-            token={token}
             listaGeneros={listaGeneros}
             dadosEdicao={dadosEdicao}
             showToast={showToast}
