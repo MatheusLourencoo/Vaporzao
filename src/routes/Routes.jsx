@@ -4,6 +4,8 @@ import Biblioteca from "../pages/Biblioteca";
 import { Wishlist } from "../pages/Wishlist";
 import { GameDetails } from "../pages/GameDetails";
 import PublicarJogo from '../pages/PublicarJogo';
+import { Comunidade } from "../pages/Comunidade"; 
+import { Perfil } from "../pages/Perfil";
 
 export function AppRoutes({
   searchQuery,
@@ -26,15 +28,23 @@ export function AppRoutes({
           adicionarNaWishlist={adicionarNaWishlist}
         />
       } />
+      
+      <Route path="/comunidade" element={<Comunidade />} /> 
+
+      <Route path="/perfil/:matricula" element={<Perfil />} />
+   
       <Route path="/biblioteca" element={
         <Biblioteca biblioteca={biblioteca} removerDaBiblioteca={removerDaBiblioteca} />
       } />
+
       <Route path="/wishlist" element={
         <Wishlist wishlist={wishlist} removerDaWishlist={removerDaWishlist} />
       } />
+
       <Route path="/publicar" element={
         <PublicarJogo isLoggedIn={isLoggedIn} onRequestLogin={() => setShowLogin(true)} showToast={showToast} />
       } />
+
       <Route path="/jogo/:id" element={
         <GameDetails 
           biblioteca={biblioteca}
@@ -44,6 +54,7 @@ export function AppRoutes({
           showToast={showToast} 
         />
       } />
+      
     </Routes>
   );
 }

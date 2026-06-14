@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./components/header.jsx";
 import { Footer } from "./components/Footer";
 import { LoginModal } from "./components/LoginModal";
@@ -6,6 +6,7 @@ import { ToastNotification } from "./components/ToastNotification";
 import { AppRoutes } from "./routes/Routes";
 import { useToast } from "./hooks/useToast";
 import { useMenuUsuario } from "./hooks/useMenusUsuarios";
+import { api } from "./services/api"; 
 
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -17,6 +18,36 @@ export default function App() {
     adicionarNaBiblioteca, removerDaBiblioteca, 
     adicionarNaWishlist, removerDaWishlist 
   } = useMenuUsuario(isLoggedIn, setShowLogin, showToast);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const verificarToken = async () => {
+      const token = localStorage.getItem("vaporzao_token");
+      
+      if (!token) {
+        setIsLoggedIn(false);
+        return;
+      }
+
+      try {
+        await api.get('/auth/me', { 
+          headers: { token } 
+        });
+      } catch (error) {
+        console.error("Token expirou no loop. Deslogando usuário...");
+        localStorage.removeItem("vaporzao_token");
+        setIsLoggedIn(false);
+        showToast("Sua sessão expirou. Por favor, faça login novamente.", "aviso");
+      }
+    };
+
+    const TEMPO_LOOP = 15 * 60 * 1000; 
+    
+    const intervalo = setInterval(verificarToken, TEMPO_LOOP);
+
+    return () => clearInterval(intervalo);
+  }, [isLoggedIn, showToast]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">

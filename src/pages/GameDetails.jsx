@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Star, ArrowLeft, Clock, Check } from "lucide-react";
 import { api } from "../services/api";
 
@@ -267,8 +267,8 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
       <div className="max-w-5xl mx-auto pt-8 px-6">
-        <button onClick={() => navigate("/")} className="text-sm text-muted-foreground hover:text-white mb-6 flex items-center gap-1 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Voltar para a loja
+        <button onClick={() => navigate(-1)} className="text-sm text-muted-foreground hover:text-white mb-6 flex items-center gap-1 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -382,16 +382,32 @@ export function GameDetails({ biblioteca = [], wishlist = [], adicionarNaBibliot
                   const inicial = nomeExibicao.charAt(0).toUpperCase();
                   const dataPostagem = r.createdAt || r.dataCriacao || r.data || null;
                   const tempoFormatado = calcularTempoDecorrido(dataPostagem);
+                  const matricula = r.matricula || r.usuario?.matricula || r.idUsuario || r.autor?.matricula || r.nomeUsuario;
                   
                   return (
                     <div key={i} className="bg-[#1a1a1a] border border-white/5 p-6 rounded-xl flex gap-4 transition-colors hover:bg-zinc-900">
-                      <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 border border-white/10 text-xl font-black text-zinc-500 shadow-inner">
-                        {inicial}
-                      </div>
+                      
+                      {matricula ? (
+                        <Link to={`/perfil/${matricula}`} className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 border border-white/10 text-xl font-black text-zinc-500 shadow-inner hover:border-[#00ff9d] hover:text-[#00ff9d] transition-all">
+                          {inicial}
+                        </Link>
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 border border-white/10 text-xl font-black text-zinc-500 shadow-inner">
+                          {inicial}
+                        </div>
+                      )}
+
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <h4 className="font-bold text-zinc-100">{nomeExibicao}</h4>
+                            {matricula ? (
+                              <Link to={`/perfil/${matricula}`} className="font-bold text-zinc-100 hover:text-[#00ff9d] hover:underline transition-colors cursor-pointer">
+                                {nomeExibicao}
+                              </Link>
+                            ) : (
+                              <h4 className="font-bold text-zinc-100">{nomeExibicao}</h4>
+                            )}
+                            
                             <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5">
                               <Clock className="w-3 h-3" />
                               <span>{tempoFormatado}</span>

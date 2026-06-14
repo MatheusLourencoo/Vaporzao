@@ -20,7 +20,6 @@ export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
     }
 
     try {
-      // AJUSTE 1: Header corrigido para o padrão da sua API
       const resBiblioteca = await api.get("/biblioteca/me", {
         headers: { token }
       });
@@ -29,7 +28,6 @@ export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
         headers: { token }
       });
 
-      // AJUSTE 2: Extrai o jogo, mas mantém as horas jogadas para o CardBiblioteca funcionar!
       const bibliotecaFormatada = (resBiblioteca.data || []).map((item) => {
         if (item.jogo) {
           return {
@@ -76,7 +74,7 @@ export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
       await api.post(
         `/biblioteca/${jogo.id}`,
         {},
-        { headers: { token } } // Header corrigido
+        { headers: { token } } 
       );
 
       await carregarDados();
@@ -129,7 +127,7 @@ export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
       await api.post(
         `/wishlist/${jogo.id}`,
         {},
-        { headers: { token } } // Header corrigido
+        { headers: { token } } 
       );
 
       await carregarDados();
@@ -146,7 +144,7 @@ export function useMenuUsuario(isLoggedIn, setShowLogin, showToast) {
 
     try {
       await api.delete(`/wishlist/${id}`, {
-        headers: { token } // Header corrigido
+        headers: { token } 
       });
 
       setWishlist((prev) =>
