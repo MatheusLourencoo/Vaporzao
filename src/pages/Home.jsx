@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Filter, ChevronDown, Check, Tag, Gamepad2, ArrowUpDown } from "lucide-react";
-import { Banner } from "../components/Banner";
-import { GameCard } from "../components/GameCard";
+import { Banner } from "../components/common/Banner";
+import { GameCard } from "../components/game/GameCard";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { useGames } from "../hooks/useGames";

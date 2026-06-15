@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
-import { ModalExclusao } from "../components/ModalExclusao";
-import { FormularioJogo } from "../components/FormularioJogo";
-import { ListaMeusJogos } from "../components/ListaMeusJogos";
+import { ModalExclusao } from "../components/modals/ModalExclusao";
+import {FormularioJogo} from "../components/publicarJogo/FormularioJogo"
+import { ListaMeusJogos } from "../components/publicarJogo/ListaMeusJogos";
 
 export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) {
   const [activeTab, setActiveTab] = useState("publicar");

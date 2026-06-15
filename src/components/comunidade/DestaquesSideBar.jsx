@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Library, Flame } from "lucide-react";
 import { api } from "../../services/api";
+import { decodificarTexto } from "../../utils/formatacao";
 
 const obterCapaAlternativa = (titulo = "") => {
   const capas = [
@@ -9,36 +10,6 @@ const obterCapaAlternativa = (titulo = "") => {
     "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=300&auto=format&fit=crop"
   ];
   return capas[titulo.length % capas.length];
-};
-
-const decodificarTexto = (textoBruto) => {
-  if (!textoBruto) return "";
-  let textoCorrigido = String(textoBruto);
-  const mapaErros = {
-    'Ã¡': 'á', 'Ã¢': 'â', 'Ã£': 'ã', 'Ã¤': 'ä',
-    'Ã©': 'é', 'Ãª': 'ê', 'Ã«': 'ë',
-    'Ã­': 'í', 'Ã®': 'î', 'Ã¯': 'ï',
-    'Ã³': 'ó', 'Ã´': 'ô', 'Ãµ': 'õ', 'Ã¶': 'ö',
-    'Ãº': 'ú', 'Ã»': 'û', 'Ã¼': 'ü',
-    'Ã§': 'ç', 'Ã±': 'ñ',
-    'Ã ': 'Á', 'Ã‚': 'Â', 'Ãƒ': 'Ã', 'Ã„': 'Ä',
-    'Ã‰': 'É', 'ÃŠ': 'Ê', 'Ã‹': 'Ë',
-    'Ã': 'Í', 'ÃŽ': 'Î', 'Ã': 'Ï',
-    'Ã“': 'Ó', 'Ã”': 'Ô', 'Ã•': 'Õ', 'Ã–': 'Ö',
-    'Ãš': 'Ú', 'Ã›': 'Û', 'Ãœ': 'Ü',
-    'Ã‡': 'Ç', 'Ã‘': 'Ñ', '‰': 'É', '‡': 'Ç',
-    'ã‡': 'ç'
-  };
-
-  for (const [erro, certo] of Object.entries(mapaErros)) {
-    textoCorrigido = textoCorrigido.split(erro).join(certo);
-  }
-
-  try {
-    textoCorrigido = decodeURIComponent(escape(textoCorrigido));
-  } catch (e) {}
-
-  return textoCorrigido.trim();
 };
 
 export function DestaquesSidebar() {

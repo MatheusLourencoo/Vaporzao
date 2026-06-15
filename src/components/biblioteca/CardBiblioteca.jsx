@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "../services/api";
+import { api } from "../../services/api";
 import { Play, Square, Clock } from "lucide-react";
 
 export function CardBiblioteca({ jogo, showToast, onAtualizar }) {

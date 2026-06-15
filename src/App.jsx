@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Header } from "./components/header.jsx";
-import { Footer } from "./components/Footer";
-import { LoginModal } from "./components/LoginModal";
-import { ToastNotification } from "./components/ToastNotification";
+import { Header } from "./components/common/header";
+import { Footer } from "./components/common/Footer";
+import { LoginModal } from "./components/modals/LoginModal";
+import { ToastNotification } from "./components/common/ToastNotification";
 import { AppRoutes } from "./routes/Routes";
 import { useToast } from "./hooks/useToast";
 import { useMenuUsuario } from "./hooks/useMenusUsuarios";

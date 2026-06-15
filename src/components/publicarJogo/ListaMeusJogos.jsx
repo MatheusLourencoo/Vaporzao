@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from "lucide-react";
-import { GameCard } from "./GameCard";
+import { GameCard } from "../game/GameCard";
 import { useNavigate } from "react-router-dom";
 
 export function ListaMeusJogos({ meusJogos, carregandoMeusJogos, onEditar, onDeletar }) {

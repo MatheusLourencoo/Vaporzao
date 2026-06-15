@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Library, Trash2 } from "lucide-react";
-import { CardBiblioteca } from "../components/CardBiblioteca";
+import { CardBiblioteca } from "../components/biblioteca/CardBiblioteca";
 import { useNavigate } from "react-router-dom";
 
 export default function Biblioteca({ 

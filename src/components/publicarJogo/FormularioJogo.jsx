@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "../services/api";
+import { api } from "../../services/api";
 import { Pencil, X, Save, Check } from "lucide-react";
 
 const InputGaleria = ({ valor, setValor, placeholder }) => (

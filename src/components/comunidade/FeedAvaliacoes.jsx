@@ -1,36 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Star, Clock, ThumbsUp, ThumbsDown, MessageCircle, MoreHorizontal, Filter, Search, ChevronDown } from "lucide-react";
+import { Star, Clock, ThumbsUp, 
+  ThumbsDown, MessageCircle, MoreHorizontal, 
+  Filter, Search, ChevronDown } from "lucide-react";
 import { api } from "../../services/api";
-
-const decodificarTexto = (textoBruto) => {
-  if (!textoBruto) return "";
-  let textoCorrigido = String(textoBruto);
-  const mapaErros = {
-    'Ã¡': 'á', 'Ã¢': 'â', 'Ã£': 'ã', 'Ã¤': 'ä', 'Ã©': 'é', 'Ãª': 'ê', 'Ã«': 'ë',
-    'Ã­': 'í', 'Ã®': 'î', 'Ã¯': 'ï', 'Ã³': 'ó', 'Ã´': 'ô', 'Ãµ': 'õ', 'Ã¶': 'ö',
-    'Ãº': 'ú', 'Ã»': 'û', 'Ã¼': 'ü', 'Ã§': 'ç', 'Ã±': 'ñ', 'Ã ': 'Á', 'Ã‚': 'Â',
-    'Ãƒ': 'Ã', 'Ã„': 'Ä', 'Ã‰': 'É', 'ÃŠ': 'Ê', 'Ã‹': 'Ë', 'Ã': 'Í', 'ÃŽ': 'Î',
-    'Ã': 'Ï', 'Ã“': 'Ó', 'Ã”': 'Ô', 'Ã•': 'Õ', 'Ã–': 'Ö', 'Ãš': 'Ú', 'Ã›': 'Û',
-    'Ãœ': 'Ü', 'Ã‡': 'Ç', 'Ã‘': 'Ñ', '‰': 'É', '‡': 'Ç', 'ã‡': 'ç'
-  };
-
-  for (const [erro, certo] of Object.entries(mapaErros)) {
-    textoCorrigido = textoCorrigido.split(erro).join(certo);
-  }
-
-  try {
-    textoCorrigido = decodeURIComponent(escape(textoCorrigido));
-  } catch (e) {}
-
-  return textoCorrigido.trim();
-};
-
-const formatarNomeTitleCase = (texto) => {
-  if (!texto) return "Membro da Vaporzão";
-  const textoLimpo = decodificarTexto(texto).toLowerCase();
-  return textoLimpo.split(/\s+/).map(p => p ? p.charAt(0).toUpperCase() + p.slice(1) : "").join(' ');
-};
+import { 
+  decodificarTexto, 
+  formatarPrimeiroEUltimoNome, 
+  calcularTempoDecorrido 
+} from "../../utils/formatacao";
 
 const removerAcentos = (str) => {
   if (!str) return "";
@@ -41,7 +19,6 @@ export function FeedAvaliacoes() {
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
-  
   const [ordenacao, setOrdenacao] = useState('recentes');
   const [busca, setBusca] = useState('');
   const [filtroSentimento, setFiltroSentimento] = useState('todas'); 
@@ -100,15 +77,6 @@ export function FeedAvaliacoes() {
       setLoading(false);
     }
   }
-
-  const calcularTempo = (dataString) => {
-    if (!dataString) return "Recentemente";
-    const min = Math.floor((new Date() - new Date(dataString)) / 60000);
-    if (min < 60) return `${Math.max(1, min)}m atrás`;
-    const horas = Math.floor(min / 60);
-    if (horas < 24) return `${horas}h atrás`;
-    return `${Math.floor(horas / 24)}d atrás`;
-  };
 
   const getNotaReal = (notaCrua) => {
     const n = Number(notaCrua) || 0;
@@ -231,11 +199,12 @@ export function FeedAvaliacoes() {
         <div className="space-y-6">
           {feedExibido.map((review) => {
             const notaReal = getNotaReal(review.nota);
-            const autorRaw = review.usuario || review.nomeUsuario || review.autor;
-            const nomeExibicao = formatarNomeTitleCase(autorRaw?.nome || autorRaw || "Anônimo");
-            const inicial = nomeExibicao.charAt(0).toUpperCase();
-            const matricula = review.matricula || autorRaw?.matricula || review.idUsuario;
+            const autorRaw = review.usuario || review.nomeUsuario || review.autor;        
+            const nomeExibicao = formatarPrimeiroEUltimoNome(autorRaw, "Anônimo");
+            const tempoFormatado = calcularTempoDecorrido(review.createdAt || review.dataCriacao || review.data);
             
+            const inicial = nomeExibicao.charAt(0).toUpperCase();
+            const matricula = review.matricula || autorRaw?.matricula || review.idUsuario;   
             const recomenda = review.recomenda !== undefined ? review.recomenda : notaReal >= 3;
 
             return (
@@ -257,7 +226,7 @@ export function FeedAvaliacoes() {
                         <span className="font-bold text-white text-sm">{nomeExibicao}</span>
                       )}
                       <div className="flex items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
-                        <Clock className="w-3 h-3" /> {calcularTempo(review.createdAt || review.dataCriacao || review.data)}
+                        <Clock className="w-3 h-3" /> {tempoFormatado}
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Heart, Trash2 } from "lucide-react";
-import { GameCard } from "../components/GameCard";
+import { GameCard } from "../components/game/GameCard";
 import { useNavigate } from "react-router-dom";
 
 export function Wishlist({ wishlist, removerDaWishlist }) {

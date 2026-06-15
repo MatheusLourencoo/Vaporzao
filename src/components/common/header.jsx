@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, User, LogOut, Gamepad2, Upload, ExternalLink, ChevronDown } from "lucide-react";
-import { api } from "../services/api";
-import { useGames } from "../hooks/useGames";
+import { api } from "../../services/api";
+import { useGames } from "../../hooks/useGames";
 
 const capasPadrao = [
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop",
