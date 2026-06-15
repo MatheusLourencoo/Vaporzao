@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { LayoutGrid, Plus, UploadCloud } from "lucide-react";
 import { api } from "../services/api";
 import { ModalExclusao } from "../components/modals/ModalExclusao";
-import {FormularioJogo} from "../components/publicarJogo/FormularioJogo"
+import { FormularioJogo } from "../components/publicarJogo/FormularioJogo";
 import { ListaMeusJogos } from "../components/publicarJogo/ListaMeusJogos";
 
 export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) {
@@ -73,9 +74,17 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
       try {
         const resImagens = await api.get(`/jogos/${id}/imagens`);
         imagens = resImagens.data || [];
-        g1 = imagens[0]?.url || ""; g2 = imagens[1]?.url || "";
-        g3 = imagens[2]?.url || ""; g4 = imagens[3]?.url || "";
-        vUrl = imagens[4]?.url || "";
+        
+        // LÓGICA NOVA: Separa vídeos de fotos para não bagunçar os inputs!
+        const isVideo = (url) => url && (url.includes("tiktok.com") || url.includes("youtube.com") || url.includes("youtu.be"));
+        const videos = imagens.filter(img => isVideo(img.url));
+        const fotos = imagens.filter(img => !isVideo(img.url));
+
+        g1 = fotos[0]?.url || "";
+        g2 = fotos[1]?.url || "";
+        g3 = fotos[2]?.url || "";
+        g4 = fotos[3]?.url || "";
+        vUrl = videos[0]?.url || ""; // O vídeo sempre cai no input de vídeo agora
       } catch (err) {}
       
       setDadosEdicao({
@@ -102,50 +111,77 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
   if (!isLoggedIn) return null;
 
   return (
-    <>
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex gap-4 border-b border-white/10 mb-8 pb-4">
-          <button 
+    <div className="min-h-screen bg-[#121212] text-zinc-100 font-sans pb-24">
+      
+      <div className="bg-[#18181c] border-b border-white/5 pt-16 pb-12">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex items-center gap-4 mb-4">
+            <UploadCloud className="w-8 h-8 text-[#00ff9d]" />
+            <h1 className="text-4xl font-extrabold tracking-tight text-white">Vaporzão Works</h1>
+          </div>
+          <p className="text-zinc-400 text-lg max-w-2xl">
+           Sua visão, nossa vitrine. Tenha total liberdade para publicar seus projetos, ajustar detalhes da sua vitrine e manter sua comunidade sempre por dentro das novidades.
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 mt-8">
+        
+        <div className="flex gap-8 border-b border-white/10 mb-8">
+          <button
             onClick={() => { setDadosEdicao(null); setActiveTab("publicar"); }}
-            className={`text-lg font-bold transition-all px-3 py-1 rounded ${activeTab === "publicar" ? "text-[#00ff9d] border border-[#00ff9d]" : "text-muted-foreground hover:text-white border border-transparent"}`}
+            className={`pb-4 text-sm uppercase tracking-wider font-bold transition-all relative ${
+              activeTab === "publicar" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+            }`}
           >
-            {dadosEdicao ? "Editar Jogo" : "Publicar Novo Jogo"}
+            <span className="flex items-center gap-2">
+              <Plus className="w-4 h-4" /> {dadosEdicao ? "Configurações do Jogo" : "Hospedar Novo Jogo"}
+            </span>
+            {activeTab === "publicar" && <span className="absolute bottom-0 left-0 w-full h-1 bg-[#00ff9d]" />}
           </button>
-          <button 
+          
+          <button
             onClick={() => { setDadosEdicao(null); setActiveTab("meus-jogos"); }}
-            className={`text-lg font-bold transition-all px-3 py-1 rounded ${activeTab === "meus-jogos" ? "text-[#00ff9d] border border-[#00ff9d]" : "text-muted-foreground hover:text-white border border-transparent"}`}
+            className={`pb-4 text-sm uppercase tracking-wider font-bold transition-all relative ${
+              activeTab === "meus-jogos" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+            }`}
           >
-            Meus Jogos
+            <span className="flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4" /> Meu Catálogo
+            </span>
+            {activeTab === "meus-jogos" && <span className="absolute bottom-0 left-0 w-full h-1 bg-[#00ff9d]" />}
           </button>
         </div>
 
-        {activeTab === "publicar" ? (
-          <FormularioJogo 
-            listaGeneros={listaGeneros}
-            dadosEdicao={dadosEdicao}
-            showToast={showToast}
-            onCancelar={() => setDadosEdicao(null)}
-            onSucesso={() => {
-              setDadosEdicao(null);
-              carregarMeusJogos();
-              setActiveTab("meus-jogos");
-            }}
-          />
-        ) : (
-          <ListaMeusJogos 
-            meusJogos={meusJogos} 
-            carregandoMeusJogos={carregandoMeusJogos} 
-            onEditar={handleEditarClick} 
-            onDeletar={(jogo) => setJogoParaDeletar(jogo)} 
-          />
-        )}
+        <div className="animate-in fade-in duration-500">
+          {activeTab === "publicar" ? (
+            <FormularioJogo
+              listaGeneros={listaGeneros}
+              dadosEdicao={dadosEdicao}
+              showToast={showToast}
+              onCancelar={() => setDadosEdicao(null)}
+              onSucesso={() => {
+                setDadosEdicao(null);
+                carregarMeusJogos();
+                setActiveTab("meus-jogos");
+              }}
+            />
+          ) : (
+            <ListaMeusJogos
+              meusJogos={meusJogos}
+              carregandoMeusJogos={carregandoMeusJogos}
+              onEditar={handleEditarClick}
+              onDeletar={(jogo) => setJogoParaDeletar(jogo)}
+            />
+          )}
+        </div>
       </div>
 
-      <ModalExclusao 
-        jogo={jogoParaDeletar} 
-        onConfirmar={handleDeletar} 
-        onCancelar={() => setJogoParaDeletar(null)} 
+      <ModalExclusao
+        jogo={jogoParaDeletar}
+        onConfirmar={handleDeletar}
+        onCancelar={() => setJogoParaDeletar(null)}
       />
-    </>
+    </div>
   );
 }
