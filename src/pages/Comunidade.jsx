@@ -1,5 +1,5 @@
 import { FeedAvaliacoes } from "../components/comunidade/FeedAvaliacoes.jsx";
-import { DestaquesSidebar } from "../components/comunidade/DestaquesSidebar.jsx";
+import { DestaquesSidebar } from "../components/comunidade/DestaquesSideBar.jsx";
 
 export function Comunidade() {
   return (
