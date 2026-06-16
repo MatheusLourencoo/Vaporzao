@@ -44,39 +44,30 @@ export function CardBiblioteca({ jogo, showToast, onAtualizar }) {
   };
 
   const encerrarSessao = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setJogando(false);
-    setSalvando(true);
-    
-    const token = localStorage.getItem("vaporzao_token");
-    let horasGanhas = Math.round(segundosSessao / 3600);
+  e.preventDefault();
+  e.stopPropagation();
+  setJogando(false);
+  setSalvando(true);
 
-    if (segundosSessao > 0 && horasGanhas === 0) {
-      horasGanhas = 1;
-    }
+  let horasGanhas = Math.round(segundosSessao / 3600);
+  if (segundosSessao > 0 && horasGanhas === 0) horasGanhas = 1;
 
-    const totalHorasInteiras = horasLocais + horasGanhas; 
-    const jogoId = jogo.id || jogo.jogoId;
+  const totalHorasInteiras = horasLocais + horasGanhas;
+  const jogoId = jogo.id || jogo.jogoId;
 
-    setHorasLocais(totalHorasInteiras);
+  setHorasLocais(totalHorasInteiras);
 
-    try {
-      await api.patch(`/biblioteca/${jogoId}`, {
-        horasJogadas: totalHorasInteiras
-      }, { 
-        headers: { 'token': token } 
-      });
-      
-      if (showToast) showToast("Progresso salvo!", "sucesso");
-      if (onAtualizar) onAtualizar();
-    } catch (error) {
-      setHorasLocais(horasLocais);
-      if (showToast) showToast("Erro ao salvar progresso na nuvem.", "erro");
-    } finally {
-      setSalvando(false);
-    }
-  };
+  try {
+    await api.patch(`/biblioteca/${jogoId}`, { horasJogadas: totalHorasInteiras });
+    if (showToast) showToast("Progresso salvo!", "sucesso");
+    if (onAtualizar) onAtualizar();
+  } catch (error) {
+    setHorasLocais(horasLocais);
+    if (showToast) showToast("Erro ao salvar progresso na nuvem.", "erro");
+  } finally {
+    setSalvando(false);
+  }
+};
 
   return (
     <div className="flex flex-col gap-3 group cursor-default">

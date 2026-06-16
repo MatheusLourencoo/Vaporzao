@@ -19,7 +19,6 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
   }, [isLoggedIn, onRequestLogin]);
 
   useEffect(() => {
-    const token = localStorage.getItem("vaporzao_token");
     if (activeTab === "meus-jogos" && token && meusJogos.length === 0) {
       carregarMeusJogos();
     }
@@ -27,10 +26,9 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
 
   const carregarMeusJogos = async () => {
     setCarregandoMeusJogos(true);
-    const token = localStorage.getItem("vaporzao_token");
     
     try {
-      const resMe = await api.get('/auth/me', { headers: { token } });
+      const resMe = await api.get('/auth/me');
       const matricula = resMe.data.matricula;
       const resUser = await api.get(`/usuarios/${matricula}`);
       const jogosValidos = (resUser.data.jogosCriados || []).filter(g => g && g.id);
@@ -43,7 +41,6 @@ export default function PublicarJogo({ isLoggedIn, onRequestLogin, showToast }) 
   };
 
   const handleDeletar = async (id) => {
-    const token = localStorage.getItem("vaporzao_token");
     
     try {
       if (id) await api.delete(`/jogos/${id}`, { headers: { token } });

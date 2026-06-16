@@ -6,13 +6,12 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
   const [galeria, setGaleria] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [erro, setErro] = useState(null);
   const [localInLib, setLocalInLib] = useState(false);
   const [localInWish, setLocalInWish] = useState(false);
   const [processandoObter, setProcessandoObter] = useState(false);
   const [processandoWishlist, setProcessandoWishlist] = useState(false);
   const [processandoReview, setProcessandoReview] = useState(false);
-
-  const token = localStorage.getItem("vaporzao_token");
 
   useEffect(() => {
     if (biblioteca && id) setLocalInLib(biblioteca.some(g => String(g.id) === String(id) || String(g.jogoId) === String(id)));
@@ -23,6 +22,7 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
     if (!id || id === "undefined") return;
     window.scrollTo(0, 0);
     setIsLoading(true);
+    setErro(null);
 
     Promise.all([
       api.get(`/jogos/${id}`).catch(err => {
@@ -32,6 +32,9 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
       api.get(`/jogos/${id}/imagens`).catch(() => ({ data: [] })),
       api.get(`/jogos/${id}/reviews`).catch(() => ({ data: [] }))
     ]).then(([resJogo, resImagens, resReviews]) => {
+      if (!resJogo.data) {
+        setErro("Não foi possível carregar os dados do jogo.");
+      }
       setGame(resJogo.data);
       setGaleria(resImagens.data);
       setReviews(resReviews.data);
@@ -40,15 +43,15 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
   }, [id, showToast]);
 
   const handleObter = async () => {
-    if (!token) return showToast("Faça login para adicionar jogos à sua biblioteca.", "aviso");
-    if (localInLib) return showToast(`O jogo já está na sua biblioteca!`, "aviso");
+    if (!localStorage.getItem("vaporzao_token")) return showToast("Faça login para adicionar jogos à sua biblioteca.", "aviso");
+    if (localInLib) return showToast("O jogo já está na sua biblioteca!", "aviso");
     if (processandoObter) return;
 
     setProcessandoObter(true);
     try {
-      await api.post(`/biblioteca/${id}`, {}, { headers: { token } });
+      await api.post(`/biblioteca/${id}`, {});
       if (adicionarNaBiblioteca) adicionarNaBiblioteca(game);
-      showToast(`Jogo adicionado à sua biblioteca!`, "sucesso");
+      showToast("Jogo adicionado à sua biblioteca!", "sucesso");
     } catch (err) {
       showToast(err.response?.data?.message || "Erro ao adicionar o jogo.", "erro");
     } finally {
@@ -57,15 +60,15 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
   };
 
   const handleWishlist = async () => {
-    if (!token) return showToast("Faça login para gerenciar sua lista de desejos.", "aviso");
-    if (localInWish) return showToast(`O jogo já está na sua lista de desejos!`, "aviso");
+    if (!localStorage.getItem("vaporzao_token")) return showToast("Faça login para gerenciar sua lista de desejos.", "aviso");
+    if (localInWish) return showToast("O jogo já está na sua lista de desejos!", "aviso");
     if (processandoWishlist) return;
 
     setProcessandoWishlist(true);
     try {
-      await api.post(`/wishlist/${id}`, {}, { headers: { token } });
+      await api.post(`/wishlist/${id}`, {});
       if (adicionarNaWishlist) adicionarNaWishlist(game);
-      showToast(`Jogo adicionado à lista de desejos!`, "sucesso");
+      showToast("Jogo adicionado à lista de desejos!", "sucesso");
     } catch (err) {
       showToast(err.response?.data?.message || "Erro ao adicionar à lista.", "erro");
     } finally {
@@ -74,13 +77,13 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
   };
 
   const handlePublicarAvaliacao = async (nota, texto, resetForm) => {
-    if (!token) return showToast("Autenticação necessária para avaliar.", "aviso");
+    if (!localStorage.getItem("vaporzao_token")) return showToast("Autenticação necessária para avaliar.", "aviso");
     if (!texto.trim()) return showToast("Escreva um comentário para publicar.", "aviso");
     if (processandoReview) return;
 
     setProcessandoReview(true);
     try {
-      await api.post(`/jogos/${id}/reviews`, { nota, texto, recomenda: nota >= 3 }, { headers: { token } });
+      await api.post(`/jogos/${id}/reviews`, { nota, texto, recomenda: nota >= 3 });
       const res = await api.get(`/jogos/${id}/reviews`);
       setReviews(res.data);
       resetForm();
@@ -93,7 +96,7 @@ export function useGameDetails({ id, biblioteca, wishlist, adicionarNaBiblioteca
   };
 
   return {
-    game, galeria, reviews, isLoading,
+    game, galeria, reviews, isLoading, erro,
     localInLib, localInWish, processandoObter, processandoWishlist, processandoReview,
     handleObter, handleWishlist, handlePublicarAvaliacao
   };

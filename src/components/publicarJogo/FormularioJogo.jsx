@@ -86,104 +86,97 @@ export function FormularioJogo({ listaGeneros, dadosEdicao, onSucesso, onCancela
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!titulo.trim() || !desenvolvedora.trim() || !descricao.trim() || !capaUrl.trim() || preco === "" || !lancamento) {
-      if (showToast) showToast("Preencha todos os campos obrigatórios (incluindo a capa do projeto).", "aviso");
-      return;
+  if (!titulo.trim() || !desenvolvedora.trim() || !descricao.trim() || !capaUrl.trim() || preco === "" || !lancamento) {
+    if (showToast) showToast("Preencha todos os campos obrigatórios (incluindo a capa do projeto).", "aviso");
+    return;
+  }
+
+  if (generosSelecionados.length === 0) {
+    if (showToast) showToast("Selecione pelo menos uma tag de categoria para o projeto.", "aviso");
+    return;
+  }
+
+  if (!hasChanges) return;
+  setSalvando(true);
+
+  try {
+    const payload = {
+      titulo: titulo.trim(), descricao: descricao.trim(), preco: Number(preco),
+      desenvolvedora: desenvolvedora.trim(),
+      lancamento: lancamento ? new Date(lancamento).toISOString() : new Date().toISOString(),
+      capaUrl: capaUrl.trim(),
+      generoIds: generosSelecionados.map(nome => {
+        const gen = listaGeneros.find(g => g.nome === nome);
+        return gen ? gen.id : nome;
+      }).filter(id => id)
+    };
+
+    let jogoId = jogoEmEdicao;
+
+    if (jogoEmEdicao) {
+      await api.put(`/jogos/${jogoEmEdicao}`, payload);
+    } else {
+      const resJogo = await api.post('/jogos', payload);
+      jogoId = resJogo.data.id;
     }
 
-    if (generosSelecionados.length === 0) {
-      if (showToast) showToast("Selecione pelo menos uma tag de categoria para o projeto.", "aviso");
-      return;
-    }
+    const urlsAtuaisDaTela = [galeria1, galeria2, galeria3, galeria4, videoUrl]
+      .map(u => u.trim())
+      .filter(u => u !== "");
 
-    if (!hasChanges) return;
-    setSalvando(true);
-    
-    const token = localStorage.getItem("vaporzao_token");
+    if (jogoEmEdicao) {
+      const imagensParaDeletar = imagensOriginais.filter(img => !urlsAtuaisDaTela.includes(img.url.trim()));
 
-    try {
-      const payload = {
-        titulo: titulo.trim(), descricao: descricao.trim(), preco: Number(preco),
-        desenvolvedora: desenvolvedora.trim(),
-        lancamento: lancamento ? new Date(lancamento).toISOString() : new Date().toISOString(),
-        capaUrl: capaUrl.trim(),
-        generoIds: generosSelecionados.map(nome => {
-          const gen = listaGeneros.find(g => g.nome === nome);
-          return gen ? gen.id : nome;
-        }).filter(id => id)
-      };
-
-      let jogoId = jogoEmEdicao;
-
-      if (jogoEmEdicao) {
-        await api.put(`/jogos/${jogoEmEdicao}`, payload, { headers: { token } });
-      } else {
-        const resJogo = await api.post('/jogos', payload, { headers: { token } });
-        jogoId = resJogo.data.id;
-      }
-
-      const urlsAtuaisDaTela = [galeria1, galeria2, galeria3, galeria4, videoUrl]
-        .map(u => u.trim())
-        .filter(u => u !== "");
-
-      // 1. LÓGICA DE EXCLUSÃO (Com tratamento anti-duplicação e fallback de rota)
-      if (jogoEmEdicao) {
-        const imagensParaDeletar = imagensOriginais.filter(img => !urlsAtuaisDaTela.includes(img.url.trim()));
-        
-        for (const img of imagensParaDeletar) {
-          try { 
-            // Tentativa 1: Rota aninhada
-            await api.delete(`/jogos/${jogoId}/imagens/${img.id}`, { headers: { token } }); 
-          } catch(err) {
-            // Se der erro 404/405, tenta a rota direta
-            if (err.response?.status === 404 || err.response?.status === 405) {
-              try {
-                // Tentativa 2: Rota direta
-                await api.delete(`/imagens/${img.id}`, { headers: { token } });
-              } catch (errFallback) {
-                console.error("Backend recusou exclusão nas duas rotas:", errFallback);
-                if (showToast) showToast("Aviso: A API bloqueou a exclusão. O backend precisa de revisão na rota de DELETE.", "aviso");
-              }
-            } else {
-              console.error("Erro desconhecido ao deletar mídia:", err);
+      for (const img of imagensParaDeletar) {
+        try {
+          await api.delete(`/jogos/${jogoId}/imagens/${img.id}`);
+        } catch (err) {
+          if (err.response?.status === 404 || err.response?.status === 405) {
+            try {
+              await api.delete(`/imagens/${img.id}`);
+            } catch (errFallback) {
+              console.error("Backend recusou exclusão nas duas rotas:", errFallback);
+              if (showToast) showToast("Aviso: A API bloqueou a exclusão. O backend precisa de revisão na rota de DELETE.", "aviso");
             }
+          } else {
+            console.error("Erro desconhecido ao deletar mídia:", err);
           }
         }
       }
-
-      // 2. Adicionar apenas o que é estritamente novo
-      const urlsOriginais = imagensOriginais.map(img => img.url.trim());
-      const urlsParaAdicionar = urlsAtuaisDaTela.filter(url => !urlsOriginais.includes(url));
-
-      if (urlsParaAdicionar.length > 0) {
-        for (let i = 0; i < urlsParaAdicionar.length; i++) {
-          const url = urlsParaAdicionar[i];
-          const isVideo = url.includes("tiktok.com") || url.includes("youtube.com") || url.includes("youtu.be");
-          
-          try {
-            await api.post(`/jogos/${jogoId}/imagens`, {
-              url: url, 
-              legenda: isVideo ? "Video" : `Screenshot`,
-              ordem: jogoEmEdicao ? imagensOriginais.length + i : i
-            }, { headers: { token } });
-          } catch(err) {
-            console.error("Erro ao adicionar mídia:", err);
-          }
-        }
-      }
-
-      if (showToast) showToast(jogoEmEdicao ? "Cadastro atualizado com sucesso!" : "Projeto hospedado com sucesso!", "sucesso");
-      limparFormularioInterno();
-      onSucesso();
-
-    } catch (error) {
-      if (showToast) showToast(jogoEmEdicao ? "Erro ao atualizar dados." : "Erro ao hospedar o projeto.", "erro");
-    } finally {
-      setSalvando(false);
     }
-  };
+
+    const urlsOriginais = imagensOriginais.map(img => img.url.trim());
+    const urlsParaAdicionar = urlsAtuaisDaTela.filter(url => !urlsOriginais.includes(url));
+
+    if (urlsParaAdicionar.length > 0) {
+      for (let i = 0; i < urlsParaAdicionar.length; i++) {
+        const url = urlsParaAdicionar[i];
+        const isVideo = url.includes("tiktok.com") || url.includes("youtube.com") || url.includes("youtu.be");
+
+        try {
+          await api.post(`/jogos/${jogoId}/imagens`, {
+            url,
+            legenda: isVideo ? "Video" : "Screenshot",
+            ordem: jogoEmEdicao ? imagensOriginais.length + i : i
+          });
+        } catch (err) {
+          console.error("Erro ao adicionar mídia:", err);
+        }
+      }
+    }
+
+    if (showToast) showToast(jogoEmEdicao ? "Cadastro atualizado com sucesso!" : "Projeto hospedado com sucesso!", "sucesso");
+    limparFormularioInterno();
+    onSucesso();
+
+  } catch (error) {
+    if (showToast) showToast(jogoEmEdicao ? "Erro ao atualizar dados." : "Erro ao hospedar o projeto.", "erro");
+  } finally {
+    setSalvando(false);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-10">
