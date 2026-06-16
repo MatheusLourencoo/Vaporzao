@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, User, Lock, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
-import { login, primeiroAcesso } from "../services/api"; 
+import { login, primeiroAcesso } from "../../services/api"; 
 
 export function LoginModal({ onClose, onLoginSuccess }) {
   const [isRegistro, setIsRegistro] = useState(false); 
@@ -39,7 +39,6 @@ export function LoginModal({ onClose, onLoginSuccess }) {
     }
   };
 
-  // Serve para limpar os erros e alternar entre login e cadastro
   const toggleModo = () => {
     setIsRegistro(!isRegistro);
     setErro("");
