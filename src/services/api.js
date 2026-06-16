@@ -16,25 +16,46 @@ api.interceptors.request.use((config) => {
 });
 
 export async function login(credenciais) {
-  const response = await api.post('/auth/login', credenciais);
-  return response.data; 
+  try {
+    const response = await api.post('/auth/login', credenciais);
+    return response.data; 
+  } catch (error) {
+    console.error("Erro na autenticação:", error);
+    throw error; 
+  }
 }
 
 export async function primeiroAcesso(credenciais) {
-  const response = await api.post('/auth/primeiro-acesso', credenciais);
-  return response.data;
+  try {
+    const response = await api.post('/auth/primeiro-acesso', credenciais);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao registrar acesso:", error);
+    throw error;
+  }
 }
 
 export async function listarJogos(busca = "", genero = "") {
-  let url = '/jogos?';
-  if (busca) url += `busca=${busca}&`;
-  if (genero) url += `genero=${genero}`;
-
-  const response = await api.get(url);
-  return response.data;
+  try {
+    const response = await api.get('/jogos', {
+      params: {
+        ...(busca && { busca }),
+        ...(genero && { genero })
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao listar jogos:", error);
+    throw error;
+  }
 }
 
 export async function listarGeneros() {
-  const response = await api.get('/generos');
-  return response.data;
+  try {
+    const response = await api.get('/generos');
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao carregar gêneros:", error);
+    throw error;
+  }
 }

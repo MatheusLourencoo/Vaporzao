@@ -168,12 +168,12 @@ export function Home({ searchQuery }) {
           <span className="text-zinc-500 font-medium">{jogosExibidos.length} jogos encontrados</span>
         </div>
         
-        <div className="flex gap-8 items-start">
+        <div className="flex gap-8 items-start relative">
           
-          <div className="w-72 shrink-0 hidden lg:block">
-            <div className="sticky top-24 bg-[#121212] border border-white/5 rounded-2xl p-6 shadow-xl">
+          <div className="w-72 shrink-0 hidden lg:block self-start sticky top-24">
+            <div className="bg-[#121212] border border-white/5 rounded-2xl p-6 shadow-xl max-h-[calc(100vh-8rem)] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full">
               
-              <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5 sticky top-0 bg-[#121212] z-10 pt-2">
                 <h3 className="text-lg font-black text-white flex items-center gap-2">
                   <Filter className="w-5 h-5 text-[#00ff9d]" /> Filtros
                   {qtdFiltrosAtivos > 0 && (
@@ -249,7 +249,7 @@ export function Home({ searchQuery }) {
                     <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isGeneroOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isGeneroOpen && (
-                    <div className="space-y-1 max-h-[40vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full">
+                    <div className="space-y-1">
                       {listaGeneros.map(g => (
                         <label key={g.id} className="flex items-center gap-3 cursor-pointer group p-2 -mx-2 rounded-xl hover:bg-white/5 transition-colors">
                           <div className={`w-5 h-5 rounded flex items-center justify-center transition-all duration-300 ${selectedGeneros.includes(g.nome) ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_10px_rgba(0,255,157,0.3)]' : 'bg-zinc-900 border border-zinc-700 group-hover:border-zinc-500'}`}>

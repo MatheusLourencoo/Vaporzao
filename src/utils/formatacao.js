@@ -115,3 +115,9 @@ export const calcularTempoDecorrido = (dataString) => {
 
   return `há ${anos} ano${anos > 1 ? "s" : ""}`;
 };
+
+export const formatarNomeTitleCase = (texto) => {
+  if (!texto) return "Membro da Vaporzão";
+  const textoLimpo = decodificarTexto(texto).toLowerCase();
+  return textoLimpo.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+};

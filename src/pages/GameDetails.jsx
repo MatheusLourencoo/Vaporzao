@@ -40,7 +40,7 @@ export function GameDetails({
 	});
 
 	if (isLoading || !game) {
-		return <GameSkeleton />;
+		return <GameDetailsLoading />;
 	}
 
 	return (
