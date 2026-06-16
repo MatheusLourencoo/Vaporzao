@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useGameDetails } from "../hooks/useGameDetails";
 import { GameDetailsLoading } from "../components/game/GameDetailsLoading";
 import { GameGallery } from "../components/game/GameGallery";
-import { GameSidebar } from "../components/game/GameSidebar";
+import { GameSidebar } from "../components/game/GameSideBar";
 import { GameRequirements } from "../components/game/GameRequirements";
 import { Review } from "../components/game/Review";
 
