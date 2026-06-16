@@ -1,6 +1,6 @@
 # 🎮 Vaporzão
 
-Plataforma de distribuição e avaliação de jogos independentes desenvolvida como projeto acadêmico no curso de **Análise e Desenvolvimento de Sistemas**.
+Plataforma de jogos independentes desenvolvida como projeto acadêmico no curso de **Análise e Desenvolvimento de Sistemas**.
 
 🔗 **Acesse o projeto:** [vaporzao.netlify.app](https://vaporzao.netlify.app/)
 
@@ -81,8 +81,6 @@ npm install
 # Inicie o servidor de desenvolvimento
 npm run dev
 ```
-
-Acesse em: `http://localhost:5173`
 
 ---
 
